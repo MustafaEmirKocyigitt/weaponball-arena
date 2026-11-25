@@ -6,11 +6,18 @@ name: daily-arena
 #   18:15  "late"  bonus battle  - only if another high-profile match kicks off ~19:00-22:25;
 #                                on busy European nights (>= 4 games) a single multi-battle "night" Reel instead
 # At most 3 posts a day, never the same match twice (see config.yaml -> schedule).
+#
+# GitHub sometimes starts scheduled runs late or skips them, so each slot has a
+# backup run 25-30 min later. A backup only posts if its slot hasn't posted yet
+# (checked against data/history.json), so nothing is ever posted twice.
 on:
   schedule:
-    - cron: "0 11 * * *"
-    - cron: "35 15 * * *"
-    - cron: "15 18 * * *"
+    - cron: "0 11 * * *"     # early
+    - cron: "30 11 * * *"    # early backup
+    - cron: "35 15 * * *"    # main
+    - cron: "0 16 * * *"     # main backup (posts immediately)
+    - cron: "15 18 * * *"    # late
+    - cron: "45 18 * * *"    # late backup
   workflow_dispatch:
     inputs:
       publish:
@@ -42,8 +49,23 @@ jobs:
       # Publishing is skipped (with a warning) until the Instagram secret exists.
       HAS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN != '' }}
       WANT_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish }}
-      SLOT: ${{ github.event_name == 'workflow_dispatch' && inputs.slot || (github.event.schedule == '0 11 * * *' && 'early' || (github.event.schedule == '15 18 * * *' && 'late' || 'main')) }}
+      SCHED: ${{ github.event.schedule }}
     steps:
+      - name: Decide slot
+        env:
+          INPUT_SLOT: ${{ inputs.slot }}
+        run: |
+          case "$SCHED" in
+            "0 11 * * *"|"30 11 * * *") SLOT=early ;;
+            "15 18 * * *"|"45 18 * * *") SLOT=late ;;
+            "35 15 * * *"|"0 16 * * *") SLOT=main ;;
+            *) SLOT="${INPUT_SLOT:-main}" ;;
+          esac
+          echo "SLOT=$SLOT" >> "$GITHUB_ENV"
+          # scheduled runs (incl. backups) never repeat a slot that already posted today
+          if [ -n "$SCHED" ]; then echo "ARENA_SKIP_IF_POSTED=1" >> "$GITHUB_ENV"; fi
+          echo "slot=$SLOT schedule='$SCHED'"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5

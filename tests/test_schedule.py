@@ -130,3 +130,14 @@ def test_busy_european_night_becomes_one_night_post(tmp_path, monkeypatch):
     assert night[0]["event_id"] == "e0"                        # Turkish club in Europe ranks first
     cap = (out / "caption.txt").read_text(encoding="utf-8")
     assert cap.count("→") == cfg["night"]["battles"]
+
+
+def test_backup_run_skips_slot_already_posted(tmp_path, monkeypatch):
+    hp = tmp_path / "h.json"
+    history.save([{"date": DAY.isoformat(), "slot": "main", "event_id": "x"}], hp)
+    monkeypatch.setenv("ARENA_SKIP_IF_POSTED", "1")
+    assert run_daily(DAY, tmp_path / "o", fake_fetch, render=False, log=lambda *_: None, history_path=hp,
+                     slot="main") is None
+    monkeypatch.delenv("ARENA_SKIP_IF_POSTED")
+    assert run_daily(DAY, tmp_path / "o", fake_fetch, render=False, log=lambda *_: None, history_path=hp,
+                     slot="main") is not None

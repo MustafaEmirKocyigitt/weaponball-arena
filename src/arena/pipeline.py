@@ -10,6 +10,7 @@ match is never posted twice.
 from __future__ import annotations
 
 import json
+import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -49,6 +50,11 @@ def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_j
         log(f"[history] could not resolve past results: {e}")
     last, rec = history.last_call(hist, day), history.record(hist)
     today_posts = history.posted_on(hist, day)
+    if os.environ.get("ARENA_SKIP_IF_POSTED"):
+        same = {"late": {"late", "night"}, "night": {"late", "night"}}.get(slot, {slot})
+        if any(e.get("slot", "main") in same for e in today_posts):
+            log(f"[{slot}] already posted today (backup run), nothing to do")
+            return None
     done_ids = {e.get("event_id") for e in today_posts if e.get("slot", "main") != slot and e.get("event_id")}
 
     if slot != "main":
