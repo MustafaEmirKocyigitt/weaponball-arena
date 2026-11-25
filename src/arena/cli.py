@@ -75,6 +75,13 @@ def _cmd_publish(args):
         f'{{"media_id": "{media_id}", "at": "{datetime.now(timezone.utc).isoformat()}"}}\n', encoding="utf-8")
 
 
+def _cmd_whoami(args):
+    from .publish.instagram import Instagram
+
+    me = Instagram.from_env(load_config(), log=lambda *_: None).whoami()
+    print(f"token OK -> @{me.get('username')} (id {me.get('id')})")
+
+
 def _cmd_refresh_token(args):
     from .publish.instagram import Instagram
 
@@ -115,7 +122,10 @@ def main(argv=None):
     pb.add_argument("--dry-run", action="store_true")
     pb.set_defaults(func=_cmd_publish)
 
-    rt = sub.add_parser("refresh-token", help="refresh the long-lived Instagram token (prints it)")
+    wh = sub.add_parser("whoami", help="check that the Instagram token works (read-only)")
+    wh.set_defaults(func=_cmd_whoami)
+
+    rt = sub.add_parser("refresh-token", help="refresh a 60-day Instagram-login token (not needed for system-user tokens)")
     rt.set_defaults(func=_cmd_refresh_token)
 
     for stream in (sys.stdout, sys.stderr):

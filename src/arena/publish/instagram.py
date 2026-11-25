@@ -4,8 +4,10 @@ Flow: create a resumable REELS container -> upload the mp4 bytes to
 rupload.facebook.com -> wait until processing is FINISHED -> (wait for the
 post time) -> media_publish.
 
-Credentials come from env vars: IG_ACCESS_TOKEN (required), IG_USER_ID
-(optional, defaults to "me"). The token is never printed.
+Uses graph.facebook.com with a never-expiring Meta Business system-user
+token. Credentials: IG_ACCESS_TOKEN env var (required); the Instagram
+account ID comes from config.yaml (IG_USER_ID env overrides). The token is
+never printed.
 """
 from __future__ import annotations
 
@@ -37,8 +39,15 @@ class Instagram:
     @classmethod
     def from_env(cls, cfg: dict, log=print) -> "Instagram":
         ig = cfg.get("instagram", {})
-        return cls(os.environ.get("IG_ACCESS_TOKEN", ""), os.environ.get("IG_USER_ID", "me"),
-                   ig.get("api_host", "https://graph.instagram.com"), ig.get("api_version", "v23.0"), log)
+        user = os.environ.get("IG_USER_ID") or str(ig.get("user_id") or "me")
+        return cls(os.environ.get("IG_ACCESS_TOKEN", ""), user,
+                   ig.get("api_host", "https://graph.facebook.com"), ig.get("api_version", "v23.0"), log)
+
+    def whoami(self) -> dict:
+        """Cheap read-only call to verify the token can see the Instagram account."""
+        r = requests.get(self._url(self.user), timeout=30,
+                         params={"fields": "id,username", "access_token": self.token})
+        return self._check(r, "account lookup")
 
     # -------------------------------------------------------------- helpers
     def _url(self, path: str) -> str:

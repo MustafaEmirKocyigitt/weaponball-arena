@@ -30,6 +30,8 @@ leagues:
   - {code: ger.1, name: "BUNDESLIGA",     tags: [bundesliga],                 bonus: 1.2}
   - {code: ita.1, name: "SERIE A",        tags: [seriea],                     bonus: 1.2}
   - {code: fra.1, name: "LIGUE 1",        tags: [ligue1],                     bonus: 1.0}
+  - {code: uefa.champions, name: "CHAMPIONS LEAGUE", tags: [championsleague, ucl], bonus: 3.0}
+  - {code: uefa.europa,    name: "EUROPA LEAGUE",    tags: [europaleague, uel],    bonus: 1.8}
 
 selection:
   big_club_bonus: 4.0          # per big club in the match (see data/teams.yaml `big: true`)
@@ -78,8 +80,10 @@ director:
   power_spread: 0.10         # strongest side gets at most +10% damage
 
 instagram:
-  api_host: https://graph.instagram.com
+  # Unified login + never-expiring system-user token (Meta Business "WeaponballBot")
+  api_host: https://graph.facebook.com
   api_version: v23.0
+  user_id: "17841449071564126"   # @weaponball.fc Instagram account ID (IG_USER_ID env overrides)
   publish_wait_timeout_minutes: 20
 
 hashtags_general: [football, soccer, satisfying, arena, prediction, matchday]

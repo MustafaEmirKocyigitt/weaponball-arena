@@ -1,6 +1,6 @@
 # Football Arena — günlük otomatik Reels
 
-**@weaponball.fc**: Her gün 6 ligin (Süper Lig, Premier League, LaLiga, Bundesliga, Serie A, Ligue 1) maçlarından en popüler olanını seçer. İki takım arenada savaştırılır ve video her akşam 19:00'da (TR) Instagram'a Reels olarak yüklenir. **Günlük çalışırken hiç LLM/token kullanmaz**, her şey deterministik koddur.
+**@weaponball.fc**: Her gün Süper Lig, 5 büyük lig, Şampiyonlar Ligi ve Avrupa Ligi maçlarından en popüler olanını seçer. İki takım arenada savaştırılır ve video her akşam 19:00'da (TR) Instagram'a Reels olarak yüklenir. **Günlük çalışırken hiç LLM/token kullanmaz**, her şey deterministik koddur.
 
 ```
 ESPN fikstür + puan durumu → maç seçimi → güç / kazanma olasılığı
@@ -31,22 +31,17 @@ Arka plan müziği kodla üretilir (`src/arena/audio/music.py`): 128 BPM, kick, 
 - `data/teams.yaml`: Takım renkleri, kısa adları, silahları ve "büyük kulüp" işareti.
 - `assets/fonts/`: Anton (başlıklar) ve Oswald (etiketler) burada. İkisi de OFL lisanslı, lisans dosyaları yanlarında.
 
-## GitHub Actions kurulumu (bir kez)
-1. Bu klasörü **özel (private)** bir GitHub reposuna yükle.
-2. Instagram hesabını **Profesyonel** (İşletme veya İçerik Üreticisi) hesaba çevir.
-3. https://developers.facebook.com adresinde bir uygulama oluştur:
-   - Ürün olarak **Instagram → "API setup with Instagram login"** ekle.
-   - Kendi Instagram hesabını ekleyip izinleri ver: `instagram_business_basic`, `instagram_business_content_publish`.
-   - "Generate token" ile **long-lived access token** al.
-   - Sadece kendi hesabına paylaşım yapacağın için App Review gerekmez.
-4. Repo → Settings → Secrets and variables → Actions bölümüne şunları ekle:
-   - `IG_ACCESS_TOKEN`: Aldığın token.
-   - `IG_USER_ID`: Instagram kullanıcı ID'si (opsiyonel, boş bırakırsan `me` kullanılır).
-   - `GH_PAT`: Sadece bu repo için **Secrets: Read and write** yetkisi olan fine-grained token. Instagram token'ını haftalık yenilemek için gerekiyor.
-5. Actions → **daily-arena** → "Run workflow" (`publish` kapalı) ile önce kuru deneme yap. Videoyu Artifacts bölümünden indirip izle.
-6. Hazır olduğunda `publish` açık şekilde bir kez çalıştır. Ondan sonra her gün 18:20'de (TR) kendiliğinden çalışır ve 19:00'da paylaşır.
+## Instagram bağlantısı (kuruldu)
+- Meta uygulaması **weaponball-arena** → Weaponball business portfolio → sistem kullanıcısı **WeaponballBot**.
+- WeaponballBot'a atananlar: uygulama (tam kontrol) ve @weaponball.fc (İçerik + İstatistikler). Token süresi **asla dolmaz**; izinleri `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`.
+- API: `graph.facebook.com`. Instagram hesap ID'si `config.yaml` → `instagram.user_id` (17841449071564126).
+- GitHub secret: yalnızca `IG_ACCESS_TOKEN`. Token'ı kontrol etmek için Actions → **check-instagram-token** → Run workflow.
+- Token'ı iptal etmek veya yenilemek için: Meta Business Suite → Ayarlar → Sistem kullanıcıları → WeaponballBot → Jetonları geri çek / Jeton oluştur.
+
+## Zamanlama
+**daily-arena** workflow'u her gün 15:20 UTC'de (18:20 TR) çalışır, videoyu üretir ve 19:00'da paylaşır. Elle çalıştırmak için: Actions → daily-arena → Run workflow (`publish` işaretlenirse hemen paylaşır).
 
 Notlar:
-- Özel repoda ayda 2000 ücretsiz dakika var, bu iş günde ~40 dakika (render + 19:00'ı bekleme) kullanır. Açık (public) repoda dakika sınırsızdır, ama GitHub 60 gün commit yapılmayan public repolarda zamanlanmış işleri durdurur.
+- Özel repoda ayda 2000 ücretsiz dakika var, bu iş günde ~40 dakika (render + 19:00'ı bekleme) kullanır.
 - ESPN API resmi değildir. ESPN erişilemezse sistem o gün "LEGENDS CLASH" videosu üretir, yani gün boş geçmez.
 - Kulüp logoları tescilli marka olduğu için kullanılmıyor. Toplar takım renkleri ve kısa adlarla çiziliyor.
