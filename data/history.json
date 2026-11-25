@@ -12,6 +12,48 @@
    "predicted_side": 0,
    "legends": false,
    "outcome": null
+  },
+  {
+   "date": "2026-11-25",
+   "slot": "night",
+   "league_code": "uefa.champions",
+   "event_id": "401915375",
+   "home": "Shakhtar Donetsk",
+   "away": "Fenerbahçe",
+   "home_short": "SHK",
+   "away_short": "FEN",
+   "predicted": "Fenerbahçe",
+   "predicted_side": 1,
+   "legends": false,
+   "outcome": null
+  },
+  {
+   "date": "2026-11-25",
+   "slot": "night",
+   "league_code": "uefa.champions",
+   "event_id": "401915374",
+   "home": "PSG",
+   "away": "Roma",
+   "home_short": "PSG",
+   "away_short": "ROM",
+   "predicted": "PSG",
+   "predicted_side": 0,
+   "legends": false,
+   "outcome": null
+  },
+  {
+   "date": "2026-11-25",
+   "slot": "night",
+   "league_code": "uefa.champions",
+   "event_id": "401915373",
+   "home": "Sporting CP",
+   "away": "Man United",
+   "home_short": "SCP",
+   "away_short": "MUN",
+   "predicted": "Sporting CP",
+   "predicted_side": 0,
+   "legends": false,
+   "outcome": null
   }
  ]
 }
