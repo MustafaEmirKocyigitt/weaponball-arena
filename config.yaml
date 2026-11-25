@@ -1,0 +1,85 @@
+# Arena configuration. Everything here can be tweaked without touching code.
+
+timezone_offset_hours: 3      # Turkey is UTC+3 all year (no DST)
+post_time_local: "19:00"      # when the Reel goes live (local time above)
+brand: "@weaponball.fc"       # shown at the bottom of the video and on the winner card
+
+video:
+  width: 1080
+  height: 1920
+  fps: 60
+  intro_seconds: 2.0
+  post_ko_seconds: 1.2
+  outro_seconds: 2.8
+  crf: 19
+  preset: veryfast
+
+audio:
+  sample_rate: 48000
+  beat: true                 # procedural 128 BPM music bed under the fight (audio/music.py)
+  beat_volume: 0.32
+  music_volume: 0.35         # used only if a file exists in assets/music/
+  sfx_volume: 1.0
+
+# Leagues to scan every day (ESPN codes). `bonus` = how much a match from
+# this league is preferred when picking the match of the day.
+leagues:
+  - {code: tur.1, name: "SÜPER LIG",      tags: [superlig, turkishfootball],  bonus: 1.5}
+  - {code: eng.1, name: "PREMIER LEAGUE", tags: [premierleague, epl],         bonus: 2.0}
+  - {code: esp.1, name: "LALIGA",         tags: [laliga],                     bonus: 1.6}
+  - {code: ger.1, name: "BUNDESLIGA",     tags: [bundesliga],                 bonus: 1.2}
+  - {code: ita.1, name: "SERIE A",        tags: [seriea],                     bonus: 1.2}
+  - {code: fra.1, name: "LIGUE 1",        tags: [ligue1],                     bonus: 1.0}
+
+selection:
+  big_club_bonus: 4.0          # per big club in the match (see data/teams.yaml `big: true`)
+  both_big_bonus: 3.0          # extra when both clubs are big
+  rank_weight: 3.0             # rewards matches between teams high in the table
+  derby_bonus: 6.0
+  after_post_time_bonus: 3.0   # prefer matches that kick off after the post goes live
+
+derbies:
+  - [galatasaray, fenerbahce]
+  - [galatasaray, besiktas]
+  - [fenerbahce, besiktas]
+  - [fenerbahce, trabzonspor]
+  - [galatasaray, trabzonspor]
+  - [real madrid, barcelona]
+  - [atletico madrid, real madrid]
+  - [manchester united, manchester city]
+  - [liverpool, everton]
+  - [liverpool, manchester united]
+  - [arsenal, tottenham hotspur]
+  - [arsenal, chelsea]
+  - [ac milan, internazionale]
+  - [juventus, internazionale]
+  - [as roma, lazio]
+  - [bayern munich, borussia dortmund]
+  - [paris saint-germain, marseille]
+
+# Used when no match is found for the day ("LEGENDS CLASH").
+legends:
+  - [galatasaray, fenerbahce]
+  - [real madrid, barcelona]
+  - [manchester united, liverpool]
+  - [bayern munich, borussia dortmund]
+  - [ac milan, internazionale]
+  - [galatasaray, real madrid]
+  - [fenerbahce, manchester city]
+  - [besiktas, juventus]
+  - [paris saint-germain, bayern munich]
+  - [arsenal, barcelona]
+
+director:
+  seeds: 300                 # candidate battles simulated per video
+  target_min_seconds: 15
+  target_max_seconds: 21
+  coin_flip_threshold: 0.06  # if strengths are closer than this, favourite is a coin flip
+  power_spread: 0.10         # strongest side gets at most +10% damage
+
+instagram:
+  api_host: https://graph.instagram.com
+  api_version: v23.0
+  publish_wait_timeout_minutes: 20
+
+hashtags_general: [football, soccer, satisfying, arena, prediction, matchday]

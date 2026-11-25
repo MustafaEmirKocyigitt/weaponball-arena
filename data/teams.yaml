@@ -1,0 +1,46 @@
+# Team look overrides. Keys are normalized names (lowercase, no accents).
+# Any team not listed falls back to ESPN's colors / abbreviation.
+#   short: 3-letter label drawn on the ball
+#   primary / secondary: ball colors
+#   weapon: sword | spear | hammer | daggers | axe  (optional; otherwise derived from the name)
+#   big: true -> counts as a globally popular club when picking the match of the day
+#   aliases: other spellings ESPN or users may use
+
+galatasaray:        {name: Galatasaray, short: GAL, primary: "#A90432", secondary: "#FDB912", weapon: sword, big: true}
+fenerbahce:         {name: Fenerbahçe, short: FEN, primary: "#FFE01B", secondary: "#0B1E5B", weapon: spear, big: true}
+besiktas:           {name: Beşiktaş, short: BJK, primary: "#1A1A1A", secondary: "#FFFFFF", weapon: axe, big: true, aliases: [besiktas jk]}
+trabzonspor:        {name: Trabzonspor, short: TS, primary: "#8A1538", secondary: "#6CC4EE", weapon: hammer, big: true}
+istanbul basaksehir: {name: Başakşehir, short: IBFK, primary: "#F26522", secondary: "#13294B", aliases: [basaksehir, istanbul basaksehir fk]}
+
+real madrid:        {name: Real Madrid, short: RMA, primary: "#FFFFFF", secondary: "#FEBE10", weapon: sword, big: true}
+barcelona:          {name: Barcelona, short: BAR, primary: "#A50044", secondary: "#004D98", weapon: daggers, big: true, aliases: [fc barcelona]}
+atletico madrid:    {name: Atlético Madrid, short: ATM, primary: "#CB3524", secondary: "#FFFFFF", weapon: axe, big: true, aliases: [atletico de madrid]}
+sevilla:            {name: Sevilla, short: SEV, primary: "#FFFFFF", secondary: "#D71920"}
+real betis:         {name: Real Betis, short: BET, primary: "#00954C", secondary: "#FFFFFF"}
+
+manchester city:    {name: Man City, short: MCI, primary: "#6CABDD", secondary: "#1C2C5B", weapon: spear, big: true, aliases: [man city]}
+manchester united:  {name: Man United, short: MUN, primary: "#DA291C", secondary: "#FBE122", weapon: hammer, big: true, aliases: [man united, man utd]}
+liverpool:          {name: Liverpool, short: LIV, primary: "#C8102E", secondary: "#00B2A9", weapon: sword, big: true}
+arsenal:            {name: Arsenal, short: ARS, primary: "#EF0107", secondary: "#FFFFFF", weapon: spear, big: true}
+chelsea:            {name: Chelsea, short: CHE, primary: "#034694", secondary: "#FFFFFF", weapon: daggers, big: true}
+tottenham hotspur:  {name: Tottenham, short: TOT, primary: "#FFFFFF", secondary: "#132257", weapon: axe, big: true, aliases: [tottenham, spurs]}
+newcastle united:   {name: Newcastle, short: NEW, primary: "#241F20", secondary: "#FFFFFF", aliases: [newcastle]}
+aston villa:        {name: Aston Villa, short: AVL, primary: "#670E36", secondary: "#95BFE5"}
+everton:            {name: Everton, short: EVE, primary: "#003399", secondary: "#FFFFFF"}
+
+bayern munich:      {name: Bayern München, short: FCB, primary: "#DC052D", secondary: "#FFFFFF", weapon: hammer, big: true, aliases: [bayern munchen, fc bayern, bayern]}
+borussia dortmund:  {name: Dortmund, short: BVB, primary: "#FDE100", secondary: "#1A1A1A", weapon: axe, big: true, aliases: [dortmund]}
+bayer leverkusen:   {name: Leverkusen, short: B04, primary: "#E32221", secondary: "#1A1A1A", aliases: [leverkusen, bayer 04 leverkusen]}
+rb leipzig:         {name: RB Leipzig, short: RBL, primary: "#FFFFFF", secondary: "#DD0741", aliases: [leipzig]}
+
+juventus:           {name: Juventus, short: JUV, primary: "#FFFFFF", secondary: "#1A1A1A", weapon: sword, big: true}
+internazionale:     {name: Inter, short: INT, primary: "#0068A8", secondary: "#1A1A1A", weapon: spear, big: true, aliases: [inter, inter milan]}
+ac milan:           {name: AC Milan, short: MIL, primary: "#FB090B", secondary: "#1A1A1A", weapon: daggers, big: true, aliases: [milan]}
+napoli:             {name: Napoli, short: NAP, primary: "#12A0D7", secondary: "#FFFFFF", big: true, aliases: [ssc napoli]}
+as roma:            {name: Roma, short: ROM, primary: "#8E1F2F", secondary: "#F0BC42", aliases: [roma]}
+lazio:              {name: Lazio, short: LAZ, primary: "#87D8F7", secondary: "#FFFFFF"}
+
+paris saint-germain: {name: PSG, short: PSG, primary: "#004170", secondary: "#DA291C", weapon: sword, big: true, aliases: [psg, paris sg]}
+marseille:          {name: Marseille, short: OM, primary: "#2FAEE0", secondary: "#FFFFFF", aliases: [olympique marseille]}
+lyon:               {name: Lyon, short: OL, primary: "#FFFFFF", secondary: "#14387F", aliases: [olympique lyonnais]}
+monaco:             {name: Monaco, short: ASM, primary: "#E51B22", secondary: "#FFFFFF", aliases: [as monaco]}

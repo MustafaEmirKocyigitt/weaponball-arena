@@ -1,0 +1,77 @@
+name: daily-arena
+
+on:
+  schedule:
+    # 15:20 UTC = 18:20 Turkey. Rendering takes ~5-10 min, then the job
+    # waits and publishes at post_time_local (19:00) from config.yaml.
+    - cron: "20 15 * * *"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish to Instagram (immediately)"
+        type: boolean
+        default: false
+      date:
+        description: "Local date YYYY-MM-DD (empty = today)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write   # to commit data/history.json
+
+concurrency:
+  group: daily-arena
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e .
+
+      - name: Pick match + render video
+        id: render
+        env:
+          DATE_INPUT: ${{ inputs.date }}
+        run: |
+          if [ -n "$DATE_INPUT" ]; then
+            arena daily --github-output --date "$DATE_INPUT"
+          else
+            arena daily --github-output
+          fi
+
+      - name: Keep the video as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-${{ github.run_id }}
+          path: ${{ steps.render.outputs.dir }}
+          retention-days: 14
+
+      - name: Publish to Instagram
+        if: github.event_name == 'schedule' || inputs.publish
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          NOW_FLAG: ${{ github.event_name == 'workflow_dispatch' && '--now' || '' }}
+        run: arena publish --dir "${{ steps.render.outputs.dir }}" $NOW_FLAG
+
+      # Keep the prediction record (data/history.json) so tomorrow's caption can
+      # say whether today's call was right. Also keeps the repo "active".
+      - name: Save prediction history
+        if: github.event_name == 'schedule' || inputs.publish
+        run: |
+          git config user.name "weaponball-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/history.json
+          git diff --cached --quiet || git commit -m "history: $(date -u +%F)"
+          git pull --rebase --autostash
+          git push
