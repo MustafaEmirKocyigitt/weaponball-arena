@@ -27,6 +27,10 @@ jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    env:
+      # Publishing is skipped (with a warning) until the Instagram secret exists.
+      HAS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN != '' }}
+      WANT_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,8 +60,12 @@ jobs:
           path: ${{ steps.render.outputs.dir }}
           retention-days: 14
 
+      - name: Instagram not configured yet
+        if: env.WANT_PUBLISH == 'true' && env.HAS_TOKEN != 'true'
+        run: echo "::warning::IG_ACCESS_TOKEN secret is missing - video rendered but not published."
+
       - name: Publish to Instagram
-        if: github.event_name == 'schedule' || inputs.publish
+        if: env.WANT_PUBLISH == 'true' && env.HAS_TOKEN == 'true'
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
@@ -67,7 +75,7 @@ jobs:
       # Keep the prediction record (data/history.json) so tomorrow's caption can
       # say whether today's call was right. Also keeps the repo "active".
       - name: Save prediction history
-        if: github.event_name == 'schedule' || inputs.publish
+        if: env.WANT_PUBLISH == 'true' && env.HAS_TOKEN == 'true'
         run: |
           git config user.name "weaponball-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
