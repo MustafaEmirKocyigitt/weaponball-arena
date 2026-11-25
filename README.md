@@ -38,10 +38,20 @@ Arka plan müziği kodla üretilir (`src/arena/audio/music.py`): 128 BPM, kick, 
 - GitHub secret: yalnızca `IG_ACCESS_TOKEN`. Token'ı kontrol etmek için Actions → **check-instagram-token** → Run workflow.
 - Token'ı iptal etmek veya yenilemek için: Meta Business Suite → Ayarlar → Sistem kullanıcıları → WeaponballBot → Jetonları geri çek / Jeton oluştur.
 
-## Zamanlama
-**daily-arena** workflow'u her gün 15:20 UTC'de (18:20 TR) çalışır, videoyu üretir ve 19:00'da paylaşır. Elle çalıştırmak için: Actions → daily-arena → Run workflow (`publish` işaretlenirse hemen paylaşır).
+## Zamanlama ve paylaşım sıklığı
+**daily-arena** workflow'u günde 3 kez çalışır (UTC):
+
+| Saat | Slot | Ne yapar |
+|---|---|---|
+| 11:00 | early | Sadece 11:45–15:10 arasında **büyük bir maç** başlıyorsa "bonus battle" paylaşır |
+| 15:35 | **main** | Günün ana videosu, **her gün 16:00 UTC'de** (19:00 TR) paylaşılır. Maç yoksa Legends Clash |
+| 18:15 | late | Sadece 19:00–22:25 arasında başka **büyük bir maç** başlıyorsa bonus battle paylaşır |
+
+- Günde en fazla 3 paylaşım yapılır ve aynı maç asla iki kez paylaşılmaz.
+- "Büyük maç" eşiği `config.yaml` → `schedule.bonus_min_score` (9) ile belirlenir. Kabaca büyük kulüp vs büyük kulüp, derbi ya da Şampiyonlar Ligi'nde büyük bir kulüp anlamına gelir. Sakin günlerde tek paylaşım yapılır.
+- Elle çalıştırmak için: Actions → daily-arena → Run workflow (slot seç, `publish` işaretlenirse hemen paylaşır).
 
 Notlar:
-- Özel repoda ayda 2000 ücretsiz dakika var, bu iş günde ~40 dakika (render + 19:00'ı bekleme) kullanır.
+- Özel repoda ayda 2000 ücretsiz dakika var. Bu iş ayda yaklaşık 700–800 dakika kullanır: ana paylaşım ~20 dk/gün, bonus slotlar ~2–4 dk.
 - ESPN API resmi değildir. ESPN erişilemezse sistem o gün "LEGENDS CLASH" videosu üretir, yani gün boş geçmez.
 - Kulüp logoları tescilli marka olduğu için kullanılmıyor. Toplar takım renkleri ve kısa adlarla çiziliyor.

@@ -66,7 +66,7 @@ def record_line(last: dict | None, record: tuple[int, int] | None) -> str:
 
 def build_caption(sel: Selection, winner: int, winner_hp: float, day_seed: int, general_tags: list[str],
                   win_prob: tuple[float, float] | None = None, last: dict | None = None,
-                  record: tuple[int, int] | None = None, brand: str = "") -> str:
+                  record: tuple[int, int] | None = None, brand: str = "", max_tags: int = 6) -> str:
     rng = random.Random(day_seed)
     teams = (sel.home, sel.away)
     when = "tonight" if sel.tag == "TONIGHT" else "today"
@@ -82,9 +82,10 @@ def build_caption(sel: Selection, winner: int, winner_hp: float, day_seed: int, 
         body += "\n\n" + extra
     if brand:
         body += f"\n\nNew arena battle every day ⚔️ Follow {brand}"
+    # A few targeted tags beat a wall of them: league, both clubs, then general ones.
     tags = []
-    for t in [*sel.tags, sel.home.hashtag, sel.away.hashtag, *general_tags]:
+    for t in [*sel.tags[:1], sel.home.hashtag, sel.away.hashtag, *general_tags]:
         t = _tag(t)
         if t and t not in tags:
             tags.append(t)
-    return body + "\n\n" + " ".join("#" + t for t in tags[:15])
+    return body + "\n\n" + " ".join("#" + t for t in tags[:max_tags])

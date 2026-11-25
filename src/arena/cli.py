@@ -38,14 +38,19 @@ def _cmd_daily(args):
 
     from .pipeline import run_daily
 
+    from datetime import datetime, timezone
+
     day = date.fromisoformat(args.date) if args.date else None
-    out = run_daily(day, Path(args.out_root) if args.out_root else OUTPUT, render=not args.no_render)
+    # Live run (no --date): skip matches that already kicked off, time bonus windows from now.
+    now = None if args.date else datetime.now(timezone.utc)
+    out = run_daily(day, Path(args.out_root) if args.out_root else OUTPUT, render=not args.no_render,
+                    slot=args.slot, now=now)
     if args.github_output:
         import os
         gh = os.environ.get("GITHUB_OUTPUT")
         if gh:
             with open(gh, "a", encoding="utf-8") as f:
-                f.write(f"dir={out.as_posix()}\n")
+                f.write(f"dir={out.as_posix() if out else ''}\n")
 
 
 def _cmd_publish(args):
@@ -62,7 +67,10 @@ def _cmd_publish(args):
         raise SystemExit(f"missing {video}")
     when = None
     if not args.now:
-        day = date.fromisoformat(d.name) if len(d.name) == 10 else local_today(cfg)
+        try:
+            day = date.fromisoformat(d.name[:10])
+        except ValueError:
+            day = local_today(cfg)
         when = post_time_utc(day, cfg)
         if when < datetime.now(timezone.utc):
             print(f"[publish] post time {when.isoformat()} already passed, publishing now")
@@ -113,6 +121,8 @@ def main(argv=None):
     dy.add_argument("--date", help="YYYY-MM-DD (local date, default: today)")
     dy.add_argument("--out-root")
     dy.add_argument("--no-render", action="store_true", help="only select + simulate + caption")
+    dy.add_argument("--slot", choices=["main", "early", "late"], default="main",
+                    help="main = daily anchor post; early/late = bonus battle before big kick-offs")
     dy.add_argument("--github-output", action="store_true", help="write dir=... to $GITHUB_OUTPUT")
     dy.set_defaults(func=_cmd_daily)
 

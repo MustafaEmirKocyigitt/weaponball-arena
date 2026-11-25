@@ -31,11 +31,23 @@ def save(entries: list[dict], path: Path = HISTORY_PATH):
     path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+SLOT_ORDER = {"early": 0, "main": 1, "late": 2}
+
+
+def _key(e: dict) -> tuple[str, str]:
+    return e["date"], e.get("slot", "main")
+
+
 def add(entries: list[dict], entry: dict) -> list[dict]:
-    out = [e for e in entries if e.get("date") != entry["date"]]
+    """Insert/replace the entry for (date, slot); several posts per day are allowed."""
+    out = [e for e in entries if _key(e) != _key(entry)]
     out.append(entry)
-    out.sort(key=lambda e: e["date"])
+    out.sort(key=lambda e: (e["date"], SLOT_ORDER.get(e.get("slot", "main"), 1)))
     return out
+
+
+def posted_on(entries: list[dict], day: date) -> list[dict]:
+    return [e for e in entries if e.get("date") == day.isoformat()]
 
 
 def _find_result(code: str, day: date, event_id: str, fetch: Fetch) -> dict | None:

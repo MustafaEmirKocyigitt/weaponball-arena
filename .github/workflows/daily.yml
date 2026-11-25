@@ -1,16 +1,26 @@
 name: daily-arena
 
+# Three runs a day (all times UTC):
+#   11:00  "early" bonus battle  - only if a high-profile match kicks off ~11:45-15:10
+#   15:35  "main"  daily anchor  - always posts, waits until 16:00 UTC (19:00 TR)
+#   18:15  "late"  bonus battle  - only if another high-profile match kicks off ~19:00-22:25
+# At most 3 posts a day, never the same match twice (see config.yaml -> schedule).
 on:
   schedule:
-    # 15:20 UTC = 18:20 Turkey. Rendering takes ~5-10 min, then the job
-    # waits and publishes at post_time_local (19:00) from config.yaml.
-    - cron: "20 15 * * *"
+    - cron: "0 11 * * *"
+    - cron: "35 15 * * *"
+    - cron: "15 18 * * *"
   workflow_dispatch:
     inputs:
       publish:
         description: "Publish to Instagram (immediately)"
         type: boolean
         default: false
+      slot:
+        description: "Which post to make"
+        type: choice
+        options: [main, early, late]
+        default: main
       date:
         description: "Local date YYYY-MM-DD (empty = today)"
         type: string
@@ -26,11 +36,12 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
     env:
       # Publishing is skipped (with a warning) until the Instagram secret exists.
       HAS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN != '' }}
       WANT_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish }}
+      SLOT: ${{ github.event_name == 'workflow_dispatch' && inputs.slot || (github.event.schedule == '0 11 * * *' && 'early' || (github.event.schedule == '15 18 * * *' && 'late' || 'main')) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,39 +58,42 @@ jobs:
         env:
           DATE_INPUT: ${{ inputs.date }}
         run: |
+          echo "slot: $SLOT"
           if [ -n "$DATE_INPUT" ]; then
-            arena daily --github-output --date "$DATE_INPUT"
+            arena daily --github-output --slot "$SLOT" --date "$DATE_INPUT"
           else
-            arena daily --github-output
+            arena daily --github-output --slot "$SLOT"
           fi
 
       - name: Keep the video as a build artifact
+        if: steps.render.outputs.dir != ''
         uses: actions/upload-artifact@v4
         with:
-          name: arena-${{ github.run_id }}
+          name: arena-${{ env.SLOT }}-${{ github.run_id }}
           path: ${{ steps.render.outputs.dir }}
           retention-days: 14
 
       - name: Instagram not configured yet
-        if: env.WANT_PUBLISH == 'true' && env.HAS_TOKEN != 'true'
+        if: steps.render.outputs.dir != '' && env.WANT_PUBLISH == 'true' && env.HAS_TOKEN != 'true'
         run: echo "::warning::IG_ACCESS_TOKEN secret is missing - video rendered but not published."
 
       - name: Publish to Instagram
-        if: env.WANT_PUBLISH == 'true' && env.HAS_TOKEN == 'true'
+        if: steps.render.outputs.dir != '' && env.WANT_PUBLISH == 'true' && env.HAS_TOKEN == 'true'
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          NOW_FLAG: ${{ github.event_name == 'workflow_dispatch' && '--now' || '' }}
+          # The anchor post waits for 16:00 UTC; bonus battles and manual runs go out right away.
+          NOW_FLAG: ${{ (github.event_name == 'workflow_dispatch' || env.SLOT != 'main') && '--now' || '' }}
         run: arena publish --dir "${{ steps.render.outputs.dir }}" $NOW_FLAG
 
       # Keep the prediction record (data/history.json) so tomorrow's caption can
       # say whether today's call was right. Also keeps the repo "active".
       - name: Save prediction history
-        if: env.WANT_PUBLISH == 'true' && env.HAS_TOKEN == 'true'
+        if: steps.render.outputs.dir != '' && env.WANT_PUBLISH == 'true' && env.HAS_TOKEN == 'true'
         run: |
           git config user.name "weaponball-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/history.json
-          git diff --cached --quiet || git commit -m "history: $(date -u +%F)"
+          git diff --cached --quiet || git commit -m "history: $(date -u +%F) $SLOT"
           git pull --rebase --autostash
           git push

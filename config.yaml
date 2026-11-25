@@ -85,5 +85,15 @@ instagram:
   api_version: v23.0
   user_id: "17841449071564126"   # @weaponball.fc Instagram account ID (IG_USER_ID env overrides)
   publish_wait_timeout_minutes: 20
+  thumb_offset_ms: 1500   # Reels cover = intro frame with both teams, VS and win chance
 
-hashtags_general: [football, soccer, satisfying, arena, prediction, matchday]
+# Posting rhythm. The anchor post goes out every day at post_time_local
+# (19:00 TR = 16:00 UTC). On big match days up to two extra "bonus battles"
+# go out 1-4 h before high-profile kick-offs (workflow runs at 11:00 / 18:15 UTC).
+schedule:
+  max_posts_per_day: 3
+  bonus_min_score: 9.0           # see selection weights: roughly "big club in a big competition", a derby, or big vs big
+  bonus_window_minutes: [45, 250]
+
+max_hashtags: 6
+hashtags_general: [football, prediction, satisfying]

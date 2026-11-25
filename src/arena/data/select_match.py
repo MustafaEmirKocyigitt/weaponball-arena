@@ -40,7 +40,8 @@ def _is_derby(a: Team, b: Team, derbies: list) -> bool:
     return any({normalize(x), normalize(y)} == pair for x, y in derbies)
 
 
-def score_match(m: Match, cfg: dict, post_utc: datetime) -> float:
+def score_match(m: Match, cfg: dict, post_utc: datetime | None) -> float:
+    """Global-popularity score. `post_utc=None` skips the 'kicks off after the post' bonus."""
     sel = cfg.get("selection", {})
     h, a = _team(m.home), _team(m.away)
     s = m.league_bonus
@@ -52,24 +53,60 @@ def score_match(m: Match, cfg: dict, post_utc: datetime) -> float:
     s += sel.get("rank_weight", 3.0) * rs
     if _is_derby(h, a, cfg.get("derbies", [])):
         s += sel.get("derby_bonus", 6.0)
-    if m.kickoff >= post_utc:
+    if post_utc is not None and m.kickoff >= post_utc:
         s += sel.get("after_post_time_bonus", 3.0)
     return s
 
 
-def choose(matches: list[Match], day: date, cfg: dict) -> Selection:
-    post_utc = post_time_utc(day, cfg)
-    if not matches:
-        return legends_clash(day, cfg)
-    scored = sorted(((score_match(m, cfg, post_utc), i, m) for i, m in enumerate(matches)),
-                    key=lambda x: (-x[0], x[1]))
-    best_score, _, m = scored[0]
+def _selection(m: Match, score: float, tag: str) -> Selection:
     home, away = resolve_clash(_team(m.home), _team(m.away))
     st = (strength(m.standings.get(m.home.espn_id), m.home.form),
           strength(m.standings.get(m.away.espn_id), m.away.form))
-    tag = "TONIGHT" if m.kickoff >= post_utc else "TODAY"
     return Selection(home, away, m.league_name, m.tags, tag, st, (m.home.form, m.away.form), False,
-                     m.kickoff, best_score, m.league_code, m.event_id)
+                     m.kickoff, score, m.league_code, m.event_id)
+
+
+def _evening_tag(m: Match, cfg: dict) -> str:
+    local = m.kickoff + timedelta(hours=cfg.get("timezone_offset_hours", 3))
+    return "TONIGHT" if local.hour >= 18 else "TODAY"
+
+
+def choose(matches: list[Match], day: date, cfg: dict, exclude: set[str] = frozenset(),
+           now: datetime | None = None) -> Selection:
+    """Main post of the day. With `now`, matches about to start / already started are skipped."""
+    post_utc = post_time_utc(day, cfg)
+    pool = [m for m in matches if m.event_id not in exclude
+            and (now is None or m.kickoff > now + timedelta(minutes=10))]
+    if not pool:
+        return legends_clash(day, cfg)
+    scored = sorted(((score_match(m, cfg, post_utc), i, m) for i, m in enumerate(pool)),
+                    key=lambda x: (-x[0], x[1]))
+    best_score, _, m = scored[0]
+    return _selection(m, best_score, "TONIGHT" if m.kickoff >= post_utc else "TODAY")
+
+
+def choose_bonus(matches: list[Match], cfg: dict, now: datetime, exclude: set[str] = frozenset()) -> Selection | None:
+    """A 'bonus battle': a high-profile match kicking off soon that hasn't been posted yet.
+
+    Posted 1-4 hours before kickoff, when fans are scrolling for the game.
+    Only matches above `schedule.bonus_min_score` qualify, so quiet days stay at one post.
+    """
+    sch = cfg.get("schedule", {})
+    lo, hi = sch.get("bonus_window_minutes", [45, 250])
+    min_score = sch.get("bonus_min_score", 9.0)
+    cands = []
+    for i, m in enumerate(matches):
+        if m.event_id in exclude:
+            continue
+        if not (now + timedelta(minutes=lo) <= m.kickoff <= now + timedelta(minutes=hi)):
+            continue
+        s = score_match(m, cfg, None)
+        if s >= min_score:
+            cands.append((s, i, m))
+    if not cands:
+        return None
+    s, _, m = sorted(cands, key=lambda x: (-x[0], x[1]))[0]
+    return _selection(m, s, _evening_tag(m, cfg))
 
 
 def legends_clash(day: date, cfg: dict) -> Selection:

@@ -65,10 +65,12 @@ class Instagram:
         return data
 
     # -------------------------------------------------------------- steps
-    def create_container(self, caption: str) -> tuple[str, str]:
-        r = requests.post(self._url(f"{self.user}/media"), timeout=60, data={
-            "media_type": "REELS", "upload_type": "resumable", "caption": caption,
-            "share_to_feed": "true", "access_token": self.token})
+    def create_container(self, caption: str, thumb_offset_ms: int | None = None) -> tuple[str, str]:
+        data = {"media_type": "REELS", "upload_type": "resumable", "caption": caption,
+                "share_to_feed": "true", "access_token": self.token}
+        if thumb_offset_ms:
+            data["thumb_offset"] = str(int(thumb_offset_ms))
+        r = requests.post(self._url(f"{self.user}/media"), timeout=60, data=data)
         d = self._check(r, "create container")
         cid = d["id"]
         uri = d.get("uri") or RUPLOAD.format(ver=self.ver, container=cid)
@@ -123,7 +125,7 @@ def sleep_until(when_utc: datetime, log=print):
 
 def post_reel(video: Path, caption: str, cfg: dict, post_at_utc: datetime | None = None, log=print) -> str:
     ig = Instagram.from_env(cfg, log)
-    cid, uri = ig.create_container(caption)
+    cid, uri = ig.create_container(caption, cfg.get("instagram", {}).get("thumb_offset_ms"))
     ig.upload(uri, video)
     ig.wait_ready(cid, timeout_s=cfg.get("instagram", {}).get("publish_wait_timeout_minutes", 20) * 60)
     if post_at_utc:
