@@ -45,7 +45,9 @@ class Renderer:
         self.W, self.H, self.fps = video_cfg["width"], video_cfg["height"], video_cfg["fps"]
         _init_pygame(self.W, self.H)
         self.tl: Timeline = build_timeline(result, self.fps, video_cfg["intro_seconds"],
-                                           video_cfg["post_ko_seconds"], video_cfg["outro_seconds"])
+                                           video_cfg["post_ko_seconds"], video_cfg["outro_seconds"],
+                                           video_cfg.get("slowmo_window", SLOWMO_WINDOW),
+                                           video_cfg.get("ko_hold", 18))
         self.screen = pygame.Surface((self.W, self.H))
         self.fx = pygame.Surface((self.W, self.H), pygame.SRCALPHA)
         teams = card.teams
@@ -252,7 +254,7 @@ class Renderer:
         focus = (sum(p[0] for p in fxs) / len(fxs), sum(p[1] for p in fxs) / len(fxs))
         target = 1.0
         if fr.phase == "fight" and not r.timeout:
-            if r.duration - fr.t < SLOWMO_WINDOW + 0.05:
+            if r.duration - fr.t < self.vc.get("slowmo_window", SLOWMO_WINDOW) + 0.05:
                 target = 1.32
             if tl.ko_frame > 0 and idx >= tl.ko_frame:
                 target, focus = 1.42, self.ko_point or focus
@@ -380,7 +382,7 @@ class Renderer:
             draw_footer(scr, self.card, hud_alpha)
 
         # banners
-        if idx == tl.fight_start:
+        if idx == tl.fight_start and self.vc.get("fight_banner", True):
             self.banners.append(("FIGHT!", idx, 0.8, (255, 210, 80), ARENA_CY, 150))
         for label, start, dur, color, y, size in self.banners:
             draw_banner(scr, label, (idx - start) * dt, dur, color, y, size)

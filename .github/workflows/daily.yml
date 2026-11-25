@@ -3,7 +3,8 @@ name: daily-arena
 # Three runs a day (all times UTC):
 #   11:00  "early" bonus battle  - only if a high-profile match kicks off ~11:45-15:10
 #   15:35  "main"  daily anchor  - always posts, waits until 16:00 UTC (19:00 TR)
-#   18:15  "late"  bonus battle  - only if another high-profile match kicks off ~19:00-22:25
+#   18:15  "late"  bonus battle  - only if another high-profile match kicks off ~19:00-22:25;
+#                                on busy European nights (>= 4 games) a single multi-battle "night" Reel instead
 # At most 3 posts a day, never the same match twice (see config.yaml -> schedule).
 on:
   schedule:
@@ -19,7 +20,7 @@ on:
       slot:
         description: "Which post to make"
         type: choice
-        options: [main, early, late]
+        options: [main, early, late, night]
         default: main
       date:
         description: "Local date YYYY-MM-DD (empty = today)"

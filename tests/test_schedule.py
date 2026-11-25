@@ -105,3 +105,28 @@ def test_turkish_clubs_get_european_bonus():
         score_match(m("tur.1", "Fenerbahce"), dict(cfg, selection=dict(cfg["selection"], turkish_euro_bonus=0)), None)
     assert score_match(m("uefa.champions", "Lille"), cfg, None) == \
         score_match(m("uefa.champions", "Lille"), dict(cfg, selection=dict(cfg["selection"], turkish_euro_bonus=0)), None)
+
+
+def test_busy_european_night_becomes_one_night_post(tmp_path, monkeypatch):
+    from arena import pipeline
+    from arena.data.fixtures import Match, Side
+    ko = datetime(2026, 11, 25, 20, 0, tzinfo=timezone.utc)
+    clubs = [("Fenerbahce", "Shakhtar Donetsk"), ("Paris Saint-Germain", "AS Roma"),
+             ("Sporting CP", "Manchester United"), ("Internazionale", "VfB Stuttgart"), ("Lille", "Bayern Munich")]
+    ms = [Match("uefa.champions", "CHAMPIONS LEAGUE", ["championsleague"], 3.0, ko, Side(f"h{i}", h), Side(f"a{i}", a),
+                event_id=f"e{i}") for i, (h, a) in enumerate(clubs)]
+    monkeypatch.setattr(pipeline, "fetch_day", lambda *a, **k: ms)
+    cfg = load_config()
+    fast = dict(cfg["night"]["director"], seeds=24)
+    monkeypatch.setattr(pipeline, "load_config", lambda: dict(cfg, night=dict(cfg["night"], director=fast)))
+    hp = tmp_path / "h.json"
+    history.save([{"date": "2026-11-25", "slot": "main", "event_id": "e1", "outcome": None}], hp)
+    out = run_daily(date(2026, 11, 25), tmp_path / "o", render=False, log=lambda *_: None, history_path=hp,
+                    slot="late", now=datetime(2026, 11, 25, 18, 15, tzinfo=timezone.utc))
+    assert out is not None and out.name.endswith("-night")
+    night = [e for e in history.load(hp) if e["slot"] == "night"]
+    assert len(night) == cfg["night"]["battles"]
+    assert "e1" not in {e["event_id"] for e in night}          # main's match is not repeated
+    assert night[0]["event_id"] == "e0"                        # Turkish club in Europe ranks first
+    cap = (out / "caption.txt").read_text(encoding="utf-8")
+    assert cap.count("→") == cfg["night"]["battles"]

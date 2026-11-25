@@ -31,11 +31,13 @@ def save(entries: list[dict], path: Path = HISTORY_PATH):
     path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-SLOT_ORDER = {"early": 0, "main": 1, "late": 2}
+SLOT_ORDER = {"early": 0, "main": 1, "late": 2, "night": 2}
 
 
-def _key(e: dict) -> tuple[str, str]:
-    return e["date"], e.get("slot", "main")
+def _key(e: dict) -> tuple[str, str, str]:
+    slot = e.get("slot", "main")
+    # a "night" post covers several matches -> one entry per match
+    return e["date"], slot, (e.get("event_id") or "") if slot == "night" else ""
 
 
 def add(entries: list[dict], entry: dict) -> list[dict]:

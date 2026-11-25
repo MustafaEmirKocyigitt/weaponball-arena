@@ -121,8 +121,8 @@ def main(argv=None):
     dy.add_argument("--date", help="YYYY-MM-DD (local date, default: today)")
     dy.add_argument("--out-root")
     dy.add_argument("--no-render", action="store_true", help="only select + simulate + caption")
-    dy.add_argument("--slot", choices=["main", "early", "late"], default="main",
-                    help="main = daily anchor post; early/late = bonus battle before big kick-offs")
+    dy.add_argument("--slot", choices=["main", "early", "late", "night"], default="main",
+                    help="main = daily anchor post; early/late = bonus battle (late becomes a European night video on busy nights); night = force the night format")
     dy.add_argument("--github-output", action="store_true", help="write dir=... to $GITHUB_OUTPUT")
     dy.set_defaults(func=_cmd_daily)
 

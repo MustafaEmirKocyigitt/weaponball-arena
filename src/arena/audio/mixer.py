@@ -72,9 +72,19 @@ def build_soundtrack(tl: Timeline, seed: int, audio_cfg: dict, intro_s: float) -
         bed = build_music(tl.duration, fight_t - 60 / 128 * 2, end_beat, build_at, seed)
         mix.add(bed, 0.0, vol)
 
-    # --- fight events
+    add_fight_sfx(mix, tl, rng, sfx)
+
+    # --- outro
+    mix.add(synth.whoosh(0.4, rng), tl.outro_start / fps - 0.2, 0.4 * sfx)
+    mix.add(synth.chime(rng), tl.outro_start / fps + 0.1, 0.55 * sfx)
+    return mix
+
+
+def add_fight_sfx(mix: Mixer, tl: Timeline, rng: np.random.Generator, sfx: float, offset: float = 0.0):
+    """Hit / parry / wall / KO sounds for one battle, starting `offset` seconds into the video."""
+    fps = tl.fps
     for idx, evs in sorted(tl.events_at.items()):
-        at = idx / fps
+        at = offset + idx / fps
         for e in evs:
             pan = _pan(e.x)
             if e.kind == "hit":
@@ -94,8 +104,3 @@ def build_soundtrack(tl: Timeline, seed: int, audio_cfg: dict, intro_s: float) -
                 mix.add(synth.warning(rng), at, 0.3 * sfx)
             elif e.kind == "ko":
                 mix.add(synth.ko(rng), at, 1.0 * sfx, pan)
-
-    # --- outro
-    mix.add(synth.whoosh(0.4, rng), tl.outro_start / fps - 0.2, 0.4 * sfx)
-    mix.add(synth.chime(rng), tl.outro_start / fps + 0.1, 0.55 * sfx)
-    return mix

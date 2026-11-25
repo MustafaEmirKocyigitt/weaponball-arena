@@ -43,7 +43,8 @@ class Timeline:
         return frame_idx / self.fps
 
 
-def build_timeline(result: BattleResult, fps: int, intro_s: float, post_s: float, outro_s: float) -> Timeline:
+def build_timeline(result: BattleResult, fps: int, intro_s: float, post_s: float, outro_s: float,
+                   slowmo_window: float = SLOWMO_WINDOW, ko_hold: int = KO_HOLD) -> Timeline:
     frames: list[Frame] = []
     events_at: dict[int, list[Event]] = {}
 
@@ -65,7 +66,7 @@ def build_timeline(result: BattleResult, fps: int, intro_s: float, post_s: float
         events_at.setdefault(idx, []).append(e)
         if e.kind == "ko":
             ko_frame = idx
-            hold = KO_HOLD
+            hold = ko_hold
         elif e.kind == "hit":
             hold = BIG_HIT_HOLD if (e.value >= 16 or e.combo >= 3) else HOLD["hit"]
         else:
@@ -76,7 +77,7 @@ def build_timeline(result: BattleResult, fps: int, intro_s: float, post_s: float
 
     frames.append(Frame(0.0, "fight"))
     while t < end:
-        rate = SLOWMO_RATE if (end - t) < SLOWMO_WINDOW and not result.timeout else 1.0
+        rate = SLOWMO_RATE if (end - t) < slowmo_window and not result.timeout else 1.0
         nt = min(end, t + step * rate)
         # Events that happen between this frame and the next one
         while ei < len(evs) and evs[ei].t <= nt:

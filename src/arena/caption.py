@@ -89,3 +89,31 @@ def build_caption(sel: Selection, winner: int, winner_hp: float, day_seed: int, 
         if t and t not in tags:
             tags.append(t)
     return body + "\n\n" + " ".join("#" + t for t in tags[:max_tags])
+
+
+NIGHT_HEADERS = [
+    "🌙 {title} NIGHT: the arena called every big game",
+    "⚔️ {n} battles, {n} predictions. {title} night in the arena",
+    "🔥 Big {title_t} night. We fought them all first",
+    "🏟️ {title} NIGHT ARENA: here's how tonight goes",
+]
+
+
+def build_night_caption(title: str, sels: list, winners: list[int], seed: int, general_tags: list[str],
+                        record: tuple[int, int] | None = None, brand: str = "", max_tags: int = 6) -> str:
+    rng = random.Random(seed)
+    head = NIGHT_HEADERS[rng.randrange(len(NIGHT_HEADERS))].format(
+        title=title, title_t=title.title(), n=len(sels))
+    lines = [f"⚔️ {s.home.name} vs {s.away.name} → {(s.home, s.away)[w].name}" for s, w in zip(sels, winners)]
+    body = head + "\n\n" + "\n".join(lines) + "\n\nHow many will we get right? Drop your picks 👇"
+    if record and record[1] >= 3:
+        body += f"\n\nArena record: {record[0]}/{record[1]}"
+    if brand:
+        body += f"\n\nNew arena battle every day ⚔️ Follow {brand}"
+    tags = []
+    for t in [*(sels[0].tags[:1] if sels else []), *(s.home.hashtag for s in sels[:1]),
+              *(s.away.hashtag for s in sels[:1]), *general_tags]:
+        t = _tag(t)
+        if t and t not in tags:
+            tags.append(t)
+    return body + "\n\n" + " ".join("#" + t for t in tags[:max_tags])

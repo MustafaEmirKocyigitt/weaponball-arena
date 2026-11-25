@@ -62,13 +62,15 @@ def drama_score(r: BattleResult, want: int, tmin: float, tmax: float) -> float |
 
 
 def _sim_job(args):
-    seed, weapons, powers = args
-    r = simulate(seed, weapons, powers, record=False)
+    seed, weapons, powers, tuning = args
+    r = simulate(seed, weapons, powers, record=False, **tuning)
     return seed, r
 
 
 def pick_battle(home: Team, away: Team, strength: tuple[float, float], day_seed: int,
-                director_cfg: dict, workers: int | None = None) -> Pick:
+                director_cfg: dict, workers: int | None = None, tuning: dict | None = None) -> Pick:
+    """`tuning` passes sim overrides (damage_scale, shrink_start, shrink_dur) for mini battles."""
+    tuning = tuning or {}
     n = int(director_cfg.get("seeds", 300))
     tmin = float(director_cfg.get("target_min_seconds", 26))
     tmax = float(director_cfg.get("target_max_seconds", 44))
@@ -85,7 +87,7 @@ def pick_battle(home: Team, away: Team, strength: tuple[float, float], day_seed:
     weapons = (home.weapon, away.weapon)
 
     base = (day_seed % 100000) * 1000
-    jobs = [(base + i, weapons, powers) for i in range(n)]
+    jobs = [(base + i, weapons, powers, tuning) for i in range(n)]
     if workers == 1:
         results = [_sim_job(j) for j in jobs]
     else:
@@ -105,6 +107,6 @@ def pick_battle(home: Team, away: Team, strength: tuple[float, float], day_seed:
         else:
             best_seed = results[0][0]
             predicted = results[0][1].winner
-    final = simulate(best_seed, weapons, powers, record=True)
+    final = simulate(best_seed, weapons, powers, record=True, **tuning)
     return Pick(result=final, win_prob=(p_home, 1 - p_home), predicted=predicted, powers=powers,
                 score=best_score, candidates=n)

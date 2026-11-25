@@ -138,7 +138,12 @@ class Fighter:
 
 class Battle:
     def __init__(self, seed: int, weapons: tuple[str, str], powers: tuple[float, float] = (1.0, 1.0),
-                 record: bool = True):
+                 record: bool = True, damage_scale: float | None = None, shrink_start: float | None = None,
+                 shrink_dur: float | None = None):
+        # Overrides allow a fast "mini battle" mode (European night format).
+        self.damage_scale = DAMAGE_SCALE if damage_scale is None else damage_scale
+        self.shrink_start = SHRINK_START if shrink_start is None else shrink_start
+        self.shrink_dur = SHRINK_DUR if shrink_dur is None else shrink_dur
         self.seed = seed
         self.rng = random.Random(seed)
         self.record = record
@@ -178,7 +183,7 @@ class Battle:
         heading = math.atan2(f.vy, f.vx)
         diff = (desired - heading + math.pi) % (2 * math.pi) - math.pi
         heading += max(-STEER * dt, min(STEER * dt, diff))
-        speed = BASE_SPEED * (1 + f.boost) * (1 + 0.15 * min(1.0, max(0.0, (self.t - SHRINK_START) / SHRINK_DUR)))
+        speed = BASE_SPEED * (1 + f.boost) * (1 + 0.15 * min(1.0, max(0.0, (self.t - self.shrink_start) / self.shrink_dur)))
         f.vx, f.vy = math.cos(heading) * speed, math.sin(heading) * speed
         f.x += f.vx * dt
         f.y += f.vy * dt
@@ -277,7 +282,7 @@ class Battle:
                     cx, cy = seg[2], seg[3]
             if not touching:
                 continue
-            dmg = max(1, round(att.damage * att.power * DAMAGE_SCALE))
+            dmg = max(1, round(att.damage * att.power * self.damage_scale))
             vic.hp = max(0.0, vic.hp - dmg)
             att.hits += 1
             att.combo += 1
@@ -315,11 +320,11 @@ class Battle:
         a, b = self.f
         dt = DT
         self.t += dt
-        if self.t > SHRINK_START:
+        if self.t > self.shrink_start:
             if not self.shrink_announced:
                 self.shrink_announced = True
                 self.events.append(Event(self.t, "shrink", ARENA_CX, ARENA_CY))
-            k = min(1.0, (self.t - SHRINK_START) / SHRINK_DUR)
+            k = min(1.0, (self.t - self.shrink_start) / self.shrink_dur)
             self.R = ARENA_R0 + (ARENA_RMIN - ARENA_R0) * (k * k * (3 - 2 * k))
         self._move(a, b, dt)
         self._move(b, a, dt)
@@ -358,5 +363,5 @@ class Battle:
         )
 
 
-def simulate(seed: int, weapons: tuple[str, str], powers=(1.0, 1.0), record=True) -> BattleResult:
-    return Battle(seed, weapons, powers, record).run()
+def simulate(seed: int, weapons: tuple[str, str], powers=(1.0, 1.0), record=True, **tuning) -> BattleResult:
+    return Battle(seed, weapons, powers, record, **tuning).run()

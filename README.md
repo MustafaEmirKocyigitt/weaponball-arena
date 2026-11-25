@@ -49,6 +49,8 @@ Arka plan müziği kodla üretilir (`src/arena/audio/music.py`): 128 BPM, kick, 
 
 - Günde en fazla 3 paylaşım yapılır ve aynı maç asla iki kez paylaşılmaz.
 - "Büyük maç" eşiği `config.yaml` → `schedule.bonus_min_score` (9) ile belirlenir. Kabaca büyük kulüp vs büyük kulüp, derbi ya da Şampiyonlar Ligi'nde büyük bir kulüp anlamına gelir. Sakin günlerde tek paylaşım yapılır.
+- **Avrupa gecesi formatı:** Late slotun penceresinde 4 veya daha fazla Şampiyonlar Ligi ya da Avrupa Ligi maçı varsa tek bir "CHAMPIONS LEAGUE NIGHT" Reels'i çıkar. Bu video gecenin en büyük 3 maçını 5'er saniyelik mini savaşlarla gösterir, sonunda tahmin tablosu ve "HOW MANY WILL WE GET RIGHT?" çağrısı gelir. Toplam ~28 sn sürer. Ayarları `config.yaml` → `night` bölümünde.
+- **Türk takımları Avrupa'da** ekstra puan alır (`selection.turkish_euro_bonus`).
 - Elle çalıştırmak için: Actions → daily-arena → Run workflow (slot seç, `publish` işaretlenirse hemen paylaşır).
 
 Notlar:

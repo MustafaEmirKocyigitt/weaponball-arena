@@ -99,5 +99,27 @@ schedule:
   bonus_min_score: 9.0           # see selection weights: roughly "big club in a big competition", a derby, or big vs big
   bonus_window_minutes: [45, 250]
 
+# Busy European nights (e.g. 9 Champions League games at once): instead of one
+# bonus battle, the late slot posts ONE "European night" Reel with several fast
+# mini battles. Triggered when >= min_matches European fixtures kick off in the
+# late window and none of them were posted yet.
+night:
+  enabled: true
+  min_matches: 4
+  battles: 3
+  window_minutes: [30, 250]
+  intro_seconds: 1.9
+  outro_seconds: 3.2
+  post_ko_seconds: 0.8
+  slowmo_window: 0.3
+  ko_hold: 14
+  tuning: {damage_scale: 4.0, shrink_start: 1.5, shrink_dur: 2.5}
+  director:
+    seeds: 160
+    target_min_seconds: 4.0
+    target_max_seconds: 6.0
+    coin_flip_threshold: 0.06
+    power_spread: 0.10
+
 max_hashtags: 6
 hashtags_general: [football, prediction, satisfying]

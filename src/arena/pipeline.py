@@ -13,15 +13,15 @@ import json
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from .caption import build_caption
+from .caption import build_caption, build_night_caption
 from .config import OUTPUT, load_config
 from .data import history
 from .data.fixtures import fetch_day, http_get_json
-from .data.select_match import choose, choose_bonus, legends_clash
+from .data.select_match import _evening_tag, _selection, choose, choose_bonus, legends_clash, score_match
 from .director import pick_battle
 from .render.scenes import MatchCard
 
-SLOTS = {"main": 0, "early": 1, "late": 2}
+SLOTS = {"main": 0, "early": 1, "late": 2, "night": 3}
 
 
 def local_today(cfg: dict) -> date:
@@ -52,7 +52,7 @@ def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_j
     done_ids = {e.get("event_id") for e in today_posts if e.get("slot", "main") != slot and e.get("event_id")}
 
     if slot != "main":
-        if len([e for e in today_posts if e.get("slot", "main") != slot]) >= sch.get("max_posts_per_day", 3):
+        if len({e.get("slot", "main") for e in today_posts} - {slot}) >= sch.get("max_posts_per_day", 3):
             log(f"[{slot}] daily cap reached, nothing to do")
             history.save(hist, history_path)
             return None
@@ -61,7 +61,16 @@ def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_j
         except Exception as e:
             log(f"[{slot}] fixture lookup failed ({e}); skipping bonus slot")
             return None
-        sel = choose_bonus(matches, cfg, now or datetime.now(timezone.utc), done_ids)
+        live = now or datetime.now(timezone.utc)
+        night = cfg.get("night", {})
+        if slot == "night" or (slot == "late" and night.get("enabled", True)):
+            euro = _night_candidates(matches, cfg, live, done_ids)
+            if slot == "night" or len(euro) >= night.get("min_matches", 4):
+                if euro:
+                    return _run_night(day, euro, cfg, hist, history_path, out_root, render, log, rec)
+                log(f"[{slot}] no European fixtures for a night video")
+                return None
+        sel = choose_bonus(matches, cfg, live, done_ids)
         if sel is None:
             log(f"[{slot}] no high-profile match kicking off soon; skipping")
             history.save(hist, history_path)
@@ -119,4 +128,60 @@ def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_j
     }
     (out_dir / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
     log(f"[{slot}] wrote {out_dir}")
+    return out_dir
+
+
+# --------------------------------------------------------------------------- European night
+def _night_candidates(matches, cfg: dict, now: datetime, exclude: set[str]) -> list:
+    lo, hi = cfg.get("night", {}).get("window_minutes", [30, 250])
+    return [m for m in matches if m.league_code.startswith("uefa.") and m.event_id not in exclude
+            and now + timedelta(minutes=lo) <= m.kickoff <= now + timedelta(minutes=hi)]
+
+
+def _run_night(day: date, euro: list, cfg: dict, hist: list, history_path: Path, out_root: Path,
+               render: bool, log, rec) -> Path:
+    night = cfg.get("night", {})
+    ranked = sorted(euro, key=lambda m: -score_match(m, cfg, None))[: night.get("battles", 3)]
+    names = {m.league_name for m in ranked}
+    title = names.pop() if len(names) == 1 else "EUROPEAN"
+    day_seed = int(day.strftime("%Y%m%d"))
+    out_dir = Path(out_root) / f"{day.isoformat()}-night"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    from .render.night import NightBattle
+    from .render.scenes import MatchCard
+
+    sels, battles, winners = [], [], []
+    for i, m in enumerate(ranked):
+        sel = _selection(m, score_match(m, cfg, None), _evening_tag(m, cfg))
+        pick = pick_battle(sel.home, sel.away, sel.strength, day_seed * 100 + 30 + i, night["director"],
+                           tuning=night.get("tuning", {}))
+        r = pick.result
+        log(f"[night] {i + 1}. {sel.home.name} vs {sel.away.name} -> {(sel.home, sel.away)[r.winner].name} "
+            f"({r.duration:.1f}s, hp {r.hp})")
+        card = MatchCard(league=sel.league, tag=sel.tag, home=sel.home, away=sel.away, form=sel.form,
+                         win_prob=pick.win_prob, brand=cfg.get("brand", ""))
+        sels.append(sel)
+        winners.append(r.winner)
+        battles.append(NightBattle(card, r))
+        hist = history.add(hist, {
+            "date": day.isoformat(), "slot": "night", "league_code": sel.league_code, "event_id": sel.event_id,
+            "home": sel.home.name, "away": sel.away.name, "home_short": sel.home.short,
+            "away_short": sel.away.short, "predicted": (sel.home, sel.away)[r.winner].name,
+            "predicted_side": r.winner, "legends": False, "outcome": None,
+        })
+    history.save(hist, history_path)
+    caption = build_night_caption(title, sels, winners, day_seed * 100 + 30, cfg.get("hashtags_general", []),
+                                  record=rec, brand=cfg.get("brand", ""), max_tags=cfg.get("max_hashtags", 6))
+    (out_dir / "caption.txt").write_text(caption, encoding="utf-8")
+    video = out_dir / "video.mp4"
+    if render:
+        from .render.night import NightRenderer
+        NightRenderer(title, battles, cfg["video"], cfg["audio"], night, cfg.get("brand", ""),
+                      rec if rec[1] >= 3 else None).render(video, log)
+    meta = {"date": day.isoformat(), "slot": "night", "title": title,
+            "matches": [{"home": s.home.name, "away": s.away.name, "winner": (s.home, s.away)[w].name}
+                        for s, w in zip(sels, winners)], "video": video.name if render else None}
+    (out_dir / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    log(f"[night] wrote {out_dir}")
     return out_dir
