@@ -53,6 +53,10 @@ def score_match(m: Match, cfg: dict, post_utc: datetime | None) -> float:
     s += sel.get("rank_weight", 3.0) * rs
     if _is_derby(h, a, cfg.get("derbies", [])):
         s += sel.get("derby_bonus", 6.0)
+    if m.league_code.startswith("uefa."):
+        turkish = {normalize(t) for t in sel.get("turkish_clubs", [])}
+        if h.key in turkish or a.key in turkish:
+            s += sel.get("turkish_euro_bonus", 0.0)
     if post_utc is not None and m.kickoff >= post_utc:
         s += sel.get("after_post_time_bonus", 3.0)
     return s

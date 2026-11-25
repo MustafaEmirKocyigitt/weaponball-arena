@@ -1,3 +1,4 @@
+import pytest
 import json
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -85,3 +86,22 @@ def test_caption_has_few_targeted_hashtags():
     cap = build_caption(sel, 0, 10, 1, cfg["hashtags_general"], max_tags=cfg["max_hashtags"])
     tags = [w for w in cap.split() if w.startswith("#")]
     assert 3 <= len(tags) <= 6
+
+
+def test_turkish_clubs_get_european_bonus():
+    from arena.data.fixtures import Match, Side
+    from arena.data.select_match import score_match
+    cfg = load_config()
+    ko = datetime(2026, 11, 25, 20, 0, tzinfo=timezone.utc)
+
+    def m(code, home):
+        return Match(code, "X", [], 1.0, ko, Side("1", home), Side("2", "Shakhtar Donetsk"), event_id="e")
+
+    bonus = cfg["selection"]["turkish_euro_bonus"]
+    assert score_match(m("uefa.champions", "Fenerbahce"), cfg, None) - \
+        score_match(m("uefa.champions", "Fenerbahce"), dict(cfg, selection=dict(cfg["selection"], turkish_euro_bonus=0)), None) == pytest.approx(bonus)
+    # no bonus in domestic league or for non-Turkish clubs
+    assert score_match(m("tur.1", "Fenerbahce"), cfg, None) == \
+        score_match(m("tur.1", "Fenerbahce"), dict(cfg, selection=dict(cfg["selection"], turkish_euro_bonus=0)), None)
+    assert score_match(m("uefa.champions", "Lille"), cfg, None) == \
+        score_match(m("uefa.champions", "Lille"), dict(cfg, selection=dict(cfg["selection"], turkish_euro_bonus=0)), None)

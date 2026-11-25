@@ -39,6 +39,10 @@ selection:
   rank_weight: 3.0             # rewards matches between teams high in the table
   derby_bonus: 6.0
   after_post_time_bonus: 3.0   # prefer matches that kick off after the post goes live
+  # Turkish clubs in European competitions (uefa.*) get an extra push:
+  # big Turkish fan base, and those nights trend in Turkey.
+  turkish_euro_bonus: 2.5
+  turkish_clubs: [galatasaray, fenerbahce, besiktas, trabzonspor, istanbul basaksehir, samsunspor, goztepe, kasimpasa]
 
 derbies:
   - [galatasaray, fenerbahce]
