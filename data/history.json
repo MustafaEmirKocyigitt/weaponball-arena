@@ -1,0 +1,17 @@
+{
+ "predictions": [
+  {
+   "date": "2026-11-25",
+   "league_code": "uefa.champions",
+   "event_id": "401915292",
+   "home": "Club Brugge",
+   "away": "Liverpool",
+   "home_short": "BRU",
+   "away_short": "LIV",
+   "predicted": "Club Brugge",
+   "predicted_side": 0,
+   "legends": false,
+   "outcome": null
+  }
+ ]
+}
