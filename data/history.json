@@ -86,6 +86,51 @@
    "legends": false,
    "outcome": null,
    "variant": "neon"
+  },
+  {
+   "date": "2026-11-26",
+   "slot": "night",
+   "league_code": "uefa.europa.conf",
+   "event_id": "401915803",
+   "home": "CSKA Sofia",
+   "away": "Trabzonspor",
+   "home_short": "CSKA",
+   "away_short": "TS",
+   "predicted": "Trabzonspor",
+   "predicted_side": 1,
+   "legends": false,
+   "outcome": null,
+   "variant": "night"
+  },
+  {
+   "date": "2026-11-26",
+   "slot": "night",
+   "league_code": "uefa.europa",
+   "event_id": "401915502",
+   "home": "Juventus",
+   "away": "Omonia Nicosia",
+   "home_short": "JUV",
+   "away_short": "OMON",
+   "predicted": "Juventus",
+   "predicted_side": 0,
+   "legends": false,
+   "outcome": null,
+   "variant": "night"
+  },
+  {
+   "date": "2026-11-26",
+   "slot": "night",
+   "league_code": "uefa.europa",
+   "event_id": "401915516",
+   "home": "Ferencvaros",
+   "away": "NK Celje",
+   "home_short": "FER",
+   "away_short": "NKC",
+   "predicted": "Ferencvaros",
+   "predicted_side": 0,
+   "legends": false,
+   "outcome": null,
+   "variant": "night"
   }
  ]
 }
