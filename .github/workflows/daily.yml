@@ -35,6 +35,10 @@ on:
         description: "Behave like a scheduled run (used by the external cron-job.org trigger)"
         type: boolean
         default: false
+      run_day:
+        description: "Run the rest of today in ONE job: main at 16:00 UTC, then late/night at 18:15 UTC (owner away)"
+        type: boolean
+        default: false
       date:
         description: "Local date YYYY-MM-DD (empty = today)"
         type: string
@@ -48,7 +52,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # One long job that waits for each slot's time itself. Scheduled runs queued
+  # meanwhile only start after it and then skip what it already posted.
+  whole_day:
+    if: ${{ inputs.run_day }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      ARENA_SKIP_IF_POSTED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Main (16:00 UTC) and late (18:15 UTC)
+        run: |
+          git config user.name "weaponball-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          wait_until() {
+            T=$(date -u -d "today $1" +%s); N=$(date -u +%s)
+            if [ "$T" -gt "$N" ]; then echo "waiting until $1 UTC ($(( (T - N) / 60 )) min)"; sleep $(( T - N )); fi
+          }
+          post() {  # $1 slot, $2 extra publish flag
+            git pull -q --rebase --autostash
+            OUT=$(mktemp); GITHUB_OUTPUT=$OUT arena daily --github-output --slot "$1" || return 0
+            DIR=$(sed -n 's/^dir=//p' "$OUT")
+            if [ -z "$DIR" ]; then echo "[$1] nothing to post"; return 0; fi
+            arena publish --dir "$DIR" $2
+            git add data/history.json
+            git diff --cached --quiet || git commit -m "history: $(date -u +%F) $1"
+            git pull -q --rebase --autostash && git push -q
+          }
+          wait_until 15:35; post main ""
+          wait_until 18:15; post late "--now"
+
   run:
+    if: ${{ !inputs.run_day }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
