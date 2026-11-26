@@ -11,11 +11,12 @@
    "predicted": "Club Brugge",
    "predicted_side": 0,
    "legends": false,
-   "outcome": null,
+   "outcome": "miss",
    "media_id": "18347082385273530",
    "posted_at": "2026-11-25T17:26:09+00:00",
    "variant": "classic",
-   "slot": "main"
+   "slot": "main",
+   "score": "0-3"
   },
   {
    "date": "2026-11-25",
@@ -29,10 +30,11 @@
    "predicted": "Fenerbahçe",
    "predicted_side": 1,
    "legends": false,
-   "outcome": null,
+   "outcome": "hit",
    "media_id": "18345507889274108",
    "posted_at": "2026-11-25T18:33:26+00:00",
-   "variant": "night"
+   "variant": "night",
+   "score": "0-1"
   },
   {
    "date": "2026-11-25",
@@ -46,10 +48,11 @@
    "predicted": "PSG",
    "predicted_side": 0,
    "legends": false,
-   "outcome": null,
+   "outcome": "draw",
    "media_id": "18345507889274108",
    "posted_at": "2026-11-25T18:33:26+00:00",
-   "variant": "night"
+   "variant": "night",
+   "score": "2-2"
   },
   {
    "date": "2026-11-25",
@@ -63,10 +66,26 @@
    "predicted": "Sporting CP",
    "predicted_side": 0,
    "legends": false,
-   "outcome": null,
+   "outcome": "draw",
    "media_id": "18345507889274108",
    "posted_at": "2026-11-25T18:33:26+00:00",
-   "variant": "night"
+   "variant": "night",
+   "score": "2-2"
+  },
+  {
+   "date": "2026-11-26",
+   "slot": "main",
+   "league_code": "uefa.europa",
+   "event_id": "401915506",
+   "home": "Beşiktaş",
+   "away": "Hapoel Be'er",
+   "home_short": "BJK",
+   "away_short": "HBE",
+   "predicted": "Beşiktaş",
+   "predicted_side": 0,
+   "legends": false,
+   "outcome": null,
+   "variant": "neon"
   }
  ]
 }
