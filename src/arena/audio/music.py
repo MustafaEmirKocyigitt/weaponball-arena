@@ -61,8 +61,10 @@ def _clap(rng: np.random.Generator) -> np.ndarray:
     return noise * env
 
 
-def build_music(total_s: float, start: float, stop: float, build_at: float, seed: int) -> np.ndarray:
-    """Mono music bed from `start` to `stop` (seconds)."""
+def build_music(total_s: float, start: float, stop: float, build_at: float, seed: int,
+                bpm: float = BPM, pitch: float = 1.0) -> np.ndarray:
+    """Mono music bed from `start` to `stop` (seconds). `bpm` / `pitch` give each variant its own feel."""
+    BEAT = 60 / bpm
     rng = np.random.default_rng(seed)
     out = np.zeros(int(total_s * SR) + SR)
     drums = np.zeros_like(out)
@@ -84,6 +86,7 @@ def build_music(total_s: float, start: float, stop: float, build_at: float, seed
     while t < stop - 0.02:
         bar = beat // 4
         root, chord = PROGRESSION[bar % 4]
+        root, chord = root * pitch, [c * pitch for c in chord]
         building = t >= build_at
         # drums
         put(kick, t, 1.0, drums)
@@ -114,7 +117,7 @@ def build_music(total_s: float, start: float, stop: float, build_at: float, seed
     pad_n = int(2.4 * SR)
     pad = np.zeros(pad_n)
     for f in (220.0, 277.18, 329.63, 440.0):  # A major: bright, triumphant
-        pad += _lowpass(_saw(f, pad_n, 6), 8)
+        pad += _lowpass(_saw(f * pitch, pad_n, 6), 8)
     env = np.minimum(1, np.arange(pad_n) / (0.25 * SR)) * np.exp(-np.arange(pad_n) / (1.4 * SR))
     put(pad * env, stop + 0.9, 0.12)
 

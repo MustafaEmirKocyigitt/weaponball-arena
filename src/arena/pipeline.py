@@ -21,6 +21,7 @@ from .data.fixtures import fetch_day, http_get_json
 from .data.select_match import _evening_tag, _selection, choose, choose_bonus, legends_clash, score_match
 from .director import pick_battle
 from .render.scenes import MatchCard
+from .variants import resolve as resolve_variant, variant_for
 
 SLOTS = {"main": 0, "early": 1, "late": 2, "night": 3}
 
@@ -31,7 +32,7 @@ def local_today(cfg: dict) -> date:
 
 def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_json, render: bool = True,
               log=print, history_path: Path = history.HISTORY_PATH, slot: str = "main",
-              now: datetime | None = None) -> Path | None:
+              now: datetime | None = None, variant: str | None = None) -> Path | None:
     """Produce one post. Returns its folder, or None when a bonus slot has nothing worth posting.
 
     `now` (UTC) enables live filtering: skip matches that already kicked off and
@@ -97,7 +98,9 @@ def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_j
     out_dir = Path(out_root) / (day.isoformat() if slot == "main" else f"{day.isoformat()}-{slot}")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    pick = pick_battle(sel.home, sel.away, sel.strength, seed, cfg["director"])
+    var = resolve_variant(variant or os.environ.get("ARENA_VARIANT") or variant_for(day, slot, cfg), cfg)
+    log(f"[{slot}] draft: {var.label}")
+    pick = pick_battle(sel.home, sel.away, sel.strength, seed, var.director, tuning=var.tuning)
     r = pick.result
     winner = (sel.home, sel.away)[r.winner]
     log(f"[{slot}] director: seed {r.seed}, {winner.name} wins, {r.duration:.1f}s, hp {r.hp}, score {pick.score:.2f}")
@@ -117,6 +120,7 @@ def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_j
         "date": day.isoformat(), "slot": slot, "league_code": sel.league_code, "event_id": sel.event_id,
         "home": sel.home.name, "away": sel.away.name, "home_short": sel.home.short, "away_short": sel.away.short,
         "predicted": winner.name, "predicted_side": r.winner, "legends": sel.legends, "outcome": None,
+        "variant": var.name,
     })
     history.save(hist, history_path)
     (out_dir / "caption.txt").write_text(caption, encoding="utf-8")
@@ -124,9 +128,9 @@ def run_daily(day: date | None = None, out_root: Path = OUTPUT, fetch=http_get_j
     video = out_dir / "video.mp4"
     if render:
         from .render.renderer import render_video
-        render_video(card, r, video, cfg["video"], cfg["audio"])
+        render_video(card, r, video, var.video, var.audio)
     meta = {
-        "date": day.isoformat(), "slot": slot, "league": sel.league, "tag": sel.tag, "legends": sel.legends,
+        "date": day.isoformat(), "slot": slot, "variant": var.name, "thumb_offset_ms": var.video.get("thumb_offset_ms"), "league": sel.league, "tag": sel.tag, "legends": sel.legends,
         "home": sel.home.name, "away": sel.away.name, "kickoff_utc": sel.kickoff.isoformat() if sel.kickoff else None,
         "strength": sel.strength, "win_prob": pick.win_prob, "seed": r.seed, "winner": winner.name,
         "fight_seconds": round(r.duration, 2), "hp": r.hp, "hits": r.hits, "parries": r.parries,
@@ -174,7 +178,7 @@ def _run_night(day: date, euro: list, cfg: dict, hist: list, history_path: Path,
             "date": day.isoformat(), "slot": "night", "league_code": sel.league_code, "event_id": sel.event_id,
             "home": sel.home.name, "away": sel.away.name, "home_short": sel.home.short,
             "away_short": sel.away.short, "predicted": (sel.home, sel.away)[r.winner].name,
-            "predicted_side": r.winner, "legends": False, "outcome": None,
+            "predicted_side": r.winner, "legends": False, "outcome": None, "variant": "night",
         })
     history.save(hist, history_path)
     caption = build_night_caption(title, sels, winners, day_seed * 100 + 30, cfg.get("hashtags_general", []),
@@ -185,7 +189,7 @@ def _run_night(day: date, euro: list, cfg: dict, hist: list, history_path: Path,
         from .render.night import NightRenderer
         NightRenderer(title, battles, cfg["video"], cfg["audio"], night, cfg.get("brand", ""),
                       rec if rec[1] >= 3 else None).render(video, log)
-    meta = {"date": day.isoformat(), "slot": "night", "title": title,
+    meta = {"date": day.isoformat(), "slot": "night", "variant": "night", "title": title, "thumb_offset_ms": 1200,
             "matches": [{"home": s.home.name, "away": s.away.name, "winner": (s.home, s.away)[w].name}
                         for s, w in zip(sels, winners)], "video": video.name if render else None}
     (out_dir / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")

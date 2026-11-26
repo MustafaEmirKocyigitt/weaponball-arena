@@ -15,21 +15,24 @@ def _cmd_preview(args):
     from .render.scenes import MatchCard
     from .sim.world import simulate
 
+    from .variants import resolve as resolve_variant
+
     cfg = load_config()
+    var = resolve_variant(args.variant, cfg)
     home, away = resolve_clash(resolve_team(args.home), resolve_team(args.away))
     if args.seed is not None:
-        result = simulate(args.seed, (home.weapon, away.weapon))
+        result = simulate(args.seed, (home.weapon, away.weapon), **var.tuning)
         prob = None
     else:
         pick = pick_battle(home, away, strength=(args.home_strength, args.away_strength),
-                           day_seed=args.day_seed, director_cfg=cfg["director"])
+                           day_seed=args.day_seed, director_cfg=var.director, tuning=var.tuning)
         result, prob = pick.result, pick.win_prob
     card = MatchCard(league=args.league, tag=args.tag, home=home, away=away,
                      form=(args.home_form, args.away_form), win_prob=prob, brand=cfg.get("brand", ""))
-    out = Path(args.out) if args.out else OUTPUT / "preview" / f"{home.short}_vs_{away.short}_{result.seed}.mp4"
-    print(f"seed={result.seed} winner={card.teams[result.winner].name} fight={result.duration:.1f}s "
+    out = Path(args.out) if args.out else OUTPUT / "preview" / f"{home.short}_vs_{away.short}_{var.name}_{result.seed}.mp4"
+    print(f"draft={var.label} seed={result.seed} winner={card.teams[result.winner].name} fight={result.duration:.1f}s "
           f"hits={result.hits} parries={result.parries} hp={tuple(round(h) for h in result.hp)}")
-    render_video(card, result, out, cfg["video"], cfg["audio"])
+    render_video(card, result, out, var.video, var.audio)
     print(f"wrote {out}")
 
 
@@ -44,7 +47,7 @@ def _cmd_daily(args):
     # Live run (no --date): skip matches that already kicked off, time bonus windows from now.
     now = None if args.date else datetime.now(timezone.utc)
     out = run_daily(day, Path(args.out_root) if args.out_root else OUTPUT, render=not args.no_render,
-                    slot=args.slot, now=now)
+                    slot=args.slot, now=now, variant=args.variant)
     if args.github_output:
         import os
         gh = os.environ.get("GITHUB_OUTPUT")
@@ -83,6 +86,33 @@ def _cmd_publish(args):
         f'{{"media_id": "{media_id}", "at": "{datetime.now(timezone.utc).isoformat()}"}}\n', encoding="utf-8")
 
 
+def _cmd_plan(args):
+    import os
+    from datetime import date
+
+    from .plan import TODAY_PATH, write_plan
+
+    write_plan(date.fromisoformat(args.date) if args.date else None, log=lambda *_: None)
+    text = TODAY_PATH.read_text(encoding="utf-8")
+    print(text)
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as f:
+            f.write(text)
+
+
+def _cmd_report(args):
+    import os
+
+    from .report import REPORT_PATH, run_report
+
+    run_report()
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as f:
+            f.write(REPORT_PATH.read_text(encoding="utf-8"))
+
+
 def _cmd_whoami(args):
     from .publish.instagram import Instagram
 
@@ -115,6 +145,7 @@ def main(argv=None):
     pv.add_argument("--league", default="SÜPER LIG")
     pv.add_argument("--tag", default="TONIGHT")
     pv.add_argument("--out")
+    pv.add_argument("--variant", default="classic", help="draft: classic | coldopen | neon | lava")
     pv.set_defaults(func=_cmd_preview)
 
     dy = sub.add_parser("daily", help="pick today's match and render the video + caption")
@@ -124,6 +155,7 @@ def main(argv=None):
     dy.add_argument("--slot", choices=["main", "early", "late", "night"], default="main",
                     help="main = daily anchor post; early/late = bonus battle (late becomes a European night video on busy nights); night = force the night format")
     dy.add_argument("--github-output", action="store_true", help="write dir=... to $GITHUB_OUTPUT")
+    dy.add_argument("--variant", help="force a draft instead of the daily rotation")
     dy.set_defaults(func=_cmd_daily)
 
     pb = sub.add_parser("publish", help="upload a rendered day folder to Instagram")
@@ -131,6 +163,13 @@ def main(argv=None):
     pb.add_argument("--now", action="store_true", help="publish immediately instead of at post time")
     pb.add_argument("--dry-run", action="store_true")
     pb.set_defaults(func=_cmd_publish)
+
+    pl = sub.add_parser("plan", help="write TODAY.md: what will be posted today, when, with which draft")
+    pl.add_argument("--date")
+    pl.set_defaults(func=_cmd_plan)
+
+    rp = sub.add_parser("report", help="fetch Instagram stats and write REPORT.md (per-draft comparison)")
+    rp.set_defaults(func=_cmd_report)
 
     wh = sub.add_parser("whoami", help="check that the Instagram token works (read-only)")
     wh.set_defaults(func=_cmd_whoami)

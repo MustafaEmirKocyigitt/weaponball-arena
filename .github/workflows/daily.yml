@@ -63,7 +63,18 @@ jobs:
           esac
           echo "SLOT=$SLOT" >> "$GITHUB_ENV"
           # scheduled runs (incl. backups) never repeat a slot that already posted today
-          if [ -n "$SCHED" ]; then echo "ARENA_SKIP_IF_POSTED=1" >> "$GITHUB_ENV"; fi
+          if [ -n "$SCHED" ]; then
+            echo "ARENA_SKIP_IF_POSTED=1" >> "$GITHUB_ENV"
+            # GitHub can start scheduled runs hours late; a stale run must not post at a random time
+            M=$(echo "$SCHED" | cut -d' ' -f1); H=$(echo "$SCHED" | cut -d' ' -f2)
+            NOW=$((10#$(date -u +%H) * 60 + 10#$(date -u +%M))); WANT=$((H * 60 + M))
+            DELAY=$(( (NOW - WANT + 1440) % 1440 ))
+            echo "started ${DELAY} min after schedule"
+            if [ "$DELAY" -gt 100 ]; then
+              echo "::warning::scheduled run started ${DELAY} min late - skipping"
+              echo "SKIP=1" >> "$GITHUB_ENV"
+            fi
+          fi
           echo "slot=$SLOT schedule='$SCHED'"
 
       - uses: actions/checkout@v4
@@ -78,6 +89,7 @@ jobs:
 
       - name: Pick match + render video
         id: render
+        if: env.SKIP != '1'
         env:
           DATE_INPUT: ${{ inputs.date }}
         run: |

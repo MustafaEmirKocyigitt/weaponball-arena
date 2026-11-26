@@ -56,12 +56,13 @@ def build_soundtrack(tl: Timeline, seed: int, audio_cfg: dict, intro_s: float) -
     fps = tl.fps
 
     # --- intro: riser -> VS slam -> FIGHT slam
-    vs_t = intro_s * INTRO_VS_AT
-    mix.add(synth.riser(max(0.3, vs_t), rng), 0.0, 0.45 * sfx)
-    mix.add(synth.slam(rng), vs_t, 0.9 * sfx)
     fight_t = tl.fight_start / fps
-    mix.add(synth.whoosh(0.35, rng), fight_t - 0.35, 0.5 * sfx)
-    mix.add(synth.slam(rng), fight_t, 0.8 * sfx)
+    if intro_s > 0:
+        vs_t = intro_s * INTRO_VS_AT
+        mix.add(synth.riser(max(0.3, vs_t), rng), 0.0, 0.45 * sfx)
+        mix.add(synth.slam(rng), vs_t, 0.9 * sfx)
+        mix.add(synth.whoosh(0.35, rng), fight_t - 0.35, 0.5 * sfx)
+    mix.add(synth.slam(rng), fight_t, 0.9 * sfx)  # cold open: the very first frame lands with a hit
 
     # --- background beat during the fight
     end_beat = (tl.ko_frame if tl.ko_frame > 0 else tl.outro_start) / fps
@@ -69,7 +70,9 @@ def build_soundtrack(tl: Timeline, seed: int, audio_cfg: dict, intro_s: float) -
         vol = audio_cfg.get("beat_volume", 0.2)
         shrink_frames = [i for i, evs in tl.events_at.items() if any(e.kind == "shrink" for e in evs)]
         build_at = shrink_frames[0] / fps if shrink_frames else end_beat
-        bed = build_music(tl.duration, fight_t - 60 / 128 * 2, end_beat, build_at, seed)
+        bpm = audio_cfg.get("bpm", 128)
+        bed = build_music(tl.duration, max(0.0, fight_t - 60 / bpm * 2), end_beat, build_at, seed,
+                          bpm=bpm, pitch=audio_cfg.get("pitch", 1.0))
         mix.add(bed, 0.0, vol)
 
     add_fight_sfx(mix, tl, rng, sfx)

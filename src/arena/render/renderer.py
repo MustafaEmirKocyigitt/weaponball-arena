@@ -52,10 +52,15 @@ class Renderer:
         self.fx = pygame.Surface((self.W, self.H), pygame.SRCALPHA)
         teams = card.teams
         self.sprites = [draw.BallSprites(t) for t in teams]
-        self.bg = draw.make_background(self.W, self.H, teams[0].primary, teams[1].primary)
-        self.floor = draw.make_floor(int(ARENA_R0))
-        self.ring_glow = draw.make_ring_glow(int(ARENA_R0), RING_COLOR)
-        self.ring_glow_danger = draw.make_ring_glow(int(ARENA_R0), DANGER_COLOR)
+        # Visual theme (variants): arena colors / floor pattern / ring colors
+        self.theme = video_cfg.get("theme") or {}
+        self.ring_color = tuple(self.theme.get("ring", RING_COLOR))
+        self.danger_color = tuple(self.theme.get("danger", DANGER_COLOR))
+        self.beat_s = 60 / audio_cfg.get("bpm", 128)
+        self.bg = draw.make_background(self.W, self.H, teams[0].primary, teams[1].primary, self.theme)
+        self.floor = draw.make_floor(int(ARENA_R0), self.theme)
+        self.ring_glow = draw.make_ring_glow(int(ARENA_R0), self.ring_color)
+        self.ring_glow_danger = draw.make_ring_glow(int(ARENA_R0), self.danger_color)
         self._ring_cache: dict = {}
         self.dim = pygame.Surface((self.W, self.H))
         self.dim.fill((6, 7, 14))
@@ -141,7 +146,7 @@ class Renderer:
             self.particles.flare(e.x, e.y, (255, 220, 140), radius=130, life=0.2)
             self.shake.kick(7)
         elif e.kind == "wall":
-            col = teams[e.a].primary if e.a >= 0 else RING_COLOR
+            col = teams[e.a].primary if e.a >= 0 else self.ring_color
             self.particles.sparks(e.x, e.y, 4, brighten(col, 0.4), speed=(200, 500), life=(0.1, 0.25), size=3)
         elif e.kind == "bump":
             self.particles.ring(e.x, e.y, (255, 255, 255), max_r=70, life=0.22, width=5)
@@ -149,7 +154,7 @@ class Renderer:
         elif e.kind == "levelup":
             pass
         elif e.kind == "shrink":
-            self.banners.append(("SUDDEN DEATH", frame_idx, 1.4, DANGER_COLOR, ARENA_CY - 90, 96))
+            self.banners.append(("SUDDEN DEATH", frame_idx, 1.4, self.danger_color, ARENA_CY - 90, 96))
         elif e.kind == "ko":
             loser = teams[e.b]
             self.particles.chunks(e.x, e.y, 70, loser.primary, loser.secondary, speed=(300, 1400), life=(0.9, 1.8), size=(7, 18))
@@ -189,10 +194,10 @@ class Renderer:
         else:
             self.screen.blit(self.floor, (cx - ARENA_R0, cy - ARENA_R0))
         danger = 1.0 if shrinking else 0.0
-        color = DANGER_COLOR if shrinking else RING_COLOR
+        color = self.danger_color if shrinking else self.ring_color
         if shrinking:
             pulse = 0.5 + 0.5 * math.sin(t_video * 10)
-            color = brighten(DANGER_COLOR, 0.25 * pulse)
+            color = brighten(self.danger_color, 0.25 * pulse)
         g = self._ring_glow(R, danger)
         self.screen.blit(g, (cx - g.get_width() / 2, cy - g.get_height() / 2), special_flags=pygame.BLEND_ADD)
         if beat > 0.15:  # pulse with the music
@@ -245,6 +250,17 @@ class Renderer:
             draw.draw_weapon(self.screen, kind, team, x + ox, y + oy, ang, ln, lvl)
             punch = 1 + 0.16 * self.ball_punch[i] ** 2
             self.sprites[i].draw(self.screen, x + ox, y + oy, roll, scale=punch, flash=self.ball_flash[i], hp=hp)
+
+    def _draw_hook(self, scr, age: float, dur: float):
+        """Cold-open hook: big question under the arena while the fight already runs."""
+        from .scenes import GOLD, ease_out_back
+        k = ease_out_back(min(1.0, age / 0.14), 2.2)
+        fade = 1.0 if age < dur - 0.3 else max(0.0, (dur - age) / 0.3)
+        a = int(255 * fade)
+        draw.blit_center(scr, draw.headline(self.card.cta, 92, GOLD, outline=6), self.W / 2, 1478,
+                         scale=0.5 + 0.5 * k, alpha=a)
+        sub = f"{self.card.league}  ·  {self.card.tag}"
+        draw.blit_center(scr, draw.text(sub, 36, (230, 232, 245), outline=3, face="body"), self.W / 2, 1560, alpha=a)
 
     # ------------------------------------------------------------------ camera / ambience
     def _update_camera(self, fr, idx: int, st: tuple, dt: float):
@@ -360,7 +376,7 @@ class Renderer:
         shrinking = R < ARENA_R0 - 0.5
         beat = 0.0
         if fr.phase == "fight" and (tl.ko_frame < 0 or idx < tl.ko_frame):
-            beat = math.exp(-(((idx - tl.fight_start) * dt) % BEAT) / BEAT * 6)
+            beat = math.exp(-(((idx - tl.fight_start) * dt) % self.beat_s) / self.beat_s * 6)
         self.draw_arena(R, ox, oy, t_video, shrinking, beat)
         if fr.phase != "intro" or fr.p > 0.8:
             self.draw_fighters(st, ox, oy)
@@ -377,9 +393,15 @@ class Renderer:
             1.0 if fr.phase == "post" else 0.0)
         hp = [self.fighter(st, i)[4] for i in (0, 1)]
         levels = [self.fighter(st, i)[6] for i in (0, 1)]
+        hook_s = self.vc.get("hook_seconds", 0.0)
+        since_fight = (idx - tl.fight_start) * dt
+        hooking = hook_s > 0 and fr.phase == "fight" and since_fight < hook_s
         if fr.phase in ("fight", "post", "intro"):
             draw_hud(scr, self.card, hp, self.hp_trail, t_video, hud_alpha, levels)
-            draw_footer(scr, self.card, hud_alpha)
+            foot = hud_alpha * (seg(since_fight, hook_s, hook_s + 0.3) if hook_s > 0 else 1.0)
+            draw_footer(scr, self.card, foot)
+        if hooking:
+            self._draw_hook(scr, since_fight, hook_s)
 
         # banners
         if idx == tl.fight_start and self.vc.get("fight_banner", True):

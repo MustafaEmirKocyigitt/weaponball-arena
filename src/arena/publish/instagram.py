@@ -106,6 +106,30 @@ class Instagram:
         self.log(f"[ig] published media {d.get('id')}")
         return d["id"]
 
+    def insights(self, media_id: str, metrics: list[str]) -> dict:
+        """Reel stats. Asks for all metrics at once, falls back to one by one (names vary by API version)."""
+        def ask(names):
+            r = requests.get(self._url(f"{media_id}/insights"), timeout=30,
+                             params={"metric": ",".join(names), "access_token": self.token})
+            d = self._check(r, "insights")
+            out = {}
+            for item in d.get("data", []):
+                v = item.get("total_value", {}).get("value")
+                if v is None and item.get("values"):
+                    v = item["values"][0].get("value")
+                out[item.get("name")] = v
+            return out
+        try:
+            return ask(metrics)
+        except InstagramError:
+            out = {}
+            for m in metrics:
+                try:
+                    out.update(ask([m]))
+                except InstagramError:
+                    pass
+            return out
+
     def refresh_token(self) -> tuple[str, int]:
         r = requests.get(f"{self.host}/refresh_access_token", timeout=30,
                          params={"grant_type": "ig_refresh_token", "access_token": self.token})
@@ -123,9 +147,10 @@ def sleep_until(when_utc: datetime, log=print):
         time.sleep(min(left, 300))
 
 
-def post_reel(video: Path, caption: str, cfg: dict, post_at_utc: datetime | None = None, log=print) -> str:
+def post_reel(video: Path, caption: str, cfg: dict, post_at_utc: datetime | None = None, log=print,
+              thumb_offset_ms: int | None = None) -> str:
     ig = Instagram.from_env(cfg, log)
-    cid, uri = ig.create_container(caption, cfg.get("instagram", {}).get("thumb_offset_ms"))
+    cid, uri = ig.create_container(caption, thumb_offset_ms or cfg.get("instagram", {}).get("thumb_offset_ms"))
     ig.upload(uri, video)
     ig.wait_ready(cid, timeout_s=cfg.get("instagram", {}).get("publish_wait_timeout_minutes", 20) * 60)
     if post_at_utc:

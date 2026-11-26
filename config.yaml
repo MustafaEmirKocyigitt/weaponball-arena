@@ -32,6 +32,7 @@ leagues:
   - {code: fra.1, name: "LIGUE 1",        tags: [ligue1],                     bonus: 1.0}
   - {code: uefa.champions, name: "CHAMPIONS LEAGUE", tags: [championsleague, ucl], bonus: 3.0}
   - {code: uefa.europa,    name: "EUROPA LEAGUE",    tags: [europaleague, uel],    bonus: 1.8}
+  - {code: uefa.europa.conf, name: "CONFERENCE LEAGUE", tags: [conferenceleague, uecl], bonus: 1.0}
 
 selection:
   big_club_bonus: 4.0          # per big club in the match (see data/teams.yaml `big: true`)
@@ -123,3 +124,46 @@ night:
 
 max_hashtags: 6
 hashtags_general: [football, prediction, satisfying]
+
+# ---------------------------------------------------------------------------
+# A/B test: 4 video drafts. The main post rotates through them day by day
+# (bonus slots are offset), every post records its draft in data/history.json,
+# and `arena report` compares Instagram stats per draft (REPORT.md).
+# When a winner is clear, put only that draft in `rotation`.
+variants:
+  rotation: [classic, coldopen, neon, lava]
+  defs:
+    classic:                      # A: control group = the current format
+      label: "A · Classic"
+      video: {thumb_offset_ms: 1500}
+    coldopen:                     # B: does the static intro card lose viewers?
+      label: "B · Cold open"
+      video: {intro_seconds: 0, hook_seconds: 1.8, outro_seconds: 2.4, fight_banner: false, thumb_offset_ms: 700}
+      director: {target_min_seconds: 12, target_max_seconds: 16, early_hit_seconds: 1.2}
+      tuning: {damage_scale: 2.0, shrink_start: 8.0, shrink_dur: 5.0}
+    neon:                         # C: new arena + faster music, shortest
+      label: "C · Neon speed"
+      video:
+        intro_seconds: 0
+        hook_seconds: 1.6
+        outro_seconds: 2.2
+        fight_banner: false
+        thumb_offset_ms: 700
+        theme: {ring: [255, 70, 230], danger: [255, 236, 70], bg_top: [34, 8, 52], bg_bottom: [6, 2, 16],
+                floor_inner: [44, 14, 70], floor_outer: [12, 4, 24], floor_line: [20, 60, 80], pattern: grid}
+      audio: {bpm: 140, pitch: 1.12, sfx_volume: 1.1}
+      director: {target_min_seconds: 10, target_max_seconds: 14, early_hit_seconds: 1.0}
+      tuning: {damage_scale: 2.4, shrink_start: 6.5, shrink_dur: 4.5}
+    lava:                         # D: new arena + heavier sound
+      label: "D · Lava"
+      video:
+        intro_seconds: 0
+        hook_seconds: 1.8
+        outro_seconds: 2.4
+        fight_banner: false
+        thumb_offset_ms: 700
+        theme: {ring: [255, 150, 40], danger: [255, 50, 20], bg_top: [44, 12, 6], bg_bottom: [10, 3, 2],
+                floor_inner: [66, 24, 10], floor_outer: [22, 8, 4], floor_line: [130, 46, 10], pattern: cracks}
+      audio: {bpm: 118, pitch: 0.84, sfx_volume: 1.15}
+      director: {target_min_seconds: 11, target_max_seconds: 15, early_hit_seconds: 1.2}
+      tuning: {damage_scale: 2.2, shrink_start: 7.0, shrink_dur: 5.0}

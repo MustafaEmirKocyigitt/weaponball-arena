@@ -76,6 +76,7 @@ def pick_battle(home: Team, away: Team, strength: tuple[float, float], day_seed:
     tmax = float(director_cfg.get("target_max_seconds", 44))
     threshold = float(director_cfg.get("coin_flip_threshold", 0.06))
     spread = float(director_cfg.get("power_spread", 0.10))
+    early_hit = director_cfg.get("early_hit_seconds")
 
     p_home = win_probability(*strength)
     rng = random.Random(day_seed)
@@ -97,6 +98,10 @@ def pick_battle(home: Team, away: Team, strength: tuple[float, float], day_seed:
     best_seed, best_score = None, -1e9
     for seed, r in results:
         sc = drama_score(r, predicted, tmin, tmax)
+        if sc is not None and early_hit:
+            # cold-open variants: the first clash must land in the first second or so (the hook)
+            first = min((e.t for e in r.events if e.kind in ("hit", "parry")), default=99.0)
+            sc += 3.0 if first <= early_hit else -1.5 * (first - early_hit)
         if sc is not None and sc > best_score:
             best_seed, best_score = seed, sc
     if best_seed is None:  # extremely unlikely: fall back to any non-timeout fight

@@ -1,5 +1,7 @@
 # Football Arena — günlük otomatik Reels
 
+📅 **[Bugün ne paylaşılacak? → TODAY.md](TODAY.md)** · 📊 **[Taslak karşılaştırması → REPORT.md](REPORT.md)**
+
 **@weaponball.fc**: Her gün Süper Lig, 5 büyük lig, Şampiyonlar Ligi ve Avrupa Ligi maçlarından en popüler olanını seçer. İki takım arenada savaştırılır ve video her akşam 19:00'da (TR) Instagram'a Reels olarak yüklenir. **Günlük çalışırken hiç LLM/token kullanmaz**, her şey deterministik koddur.
 
 ```
@@ -37,6 +39,22 @@ Arka plan müziği kodla üretilir (`src/arena/audio/music.py`): 128 BPM, kick, 
 - API: `graph.facebook.com`. Instagram hesap ID'si `config.yaml` → `instagram.user_id` (17841449071564126).
 - GitHub secret: yalnızca `IG_ACCESS_TOKEN`. Token'ı kontrol etmek için Actions → **check-instagram-token** → Run workflow.
 - Token'ı iptal etmek veya yenilemek için: Meta Business Suite → Ayarlar → Sistem kullanıcıları → WeaponballBot → Jetonları geri çek / Jeton oluştur.
+
+## 4 taslak (A/B testi)
+Ana paylaşım her gün sırayla bir taslakla çıkar. Bonus slotlar kaydırmalı çalışır, böylece aynı gün farklı taslaklar görülür. Ayarlar `config.yaml` → `variants` bölümünde.
+
+| Taslak | Açılış | Arena / ses | Süre |
+|---|---|---|---|
+| A · Classic | 2 sn intro kartı | lacivert, 128 BPM | ~28 sn (kontrol grubu) |
+| B · Cold open | savaş ilk karede başlar + "WHO WINS TONIGHT?" | lacivert, 128 BPM | ~22 sn |
+| C · Neon speed | cold open | neon mor/pembe ızgara, 140 BPM, tiz | ~17 sn |
+| D · Lava | cold open | lav çatlakları, 118 BPM, kalın ses | ~18 sn |
+
+Her paylaşımın taslağı ve Instagram media ID'si `data/history.json` dosyasına yazılır. **plan-and-report** workflow'u her sabah 06:00 UTC'de ve her paylaşımdan sonra çalışır:
+- `TODAY.md`: günün planı (slot, saat, maç, taslak, tahmin)
+- `REPORT.md`: taslak başına ortalama izlenme, **ortalama izlenme süresi**, beğeni, yorum, paylaşım, kaydetme
+
+Kazanan netleşince (her taslakta ~5 paylaşım) `variants.rotation` listesine sadece kazananı bırakmak yeterli.
 
 ## Zamanlama ve paylaşım sıklığı
 **daily-arena** workflow'u günde 3 kez çalışır (UTC):

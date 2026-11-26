@@ -295,11 +295,13 @@ def draw_weapon(screen, kind: str, team: Team, x, y, angle, length, level: int):
 
 
 # ---------------------------------------------------------------- background / arena
-def make_background(w: int, h: int, a: Color, b: Color) -> pygame.Surface:
+def make_background(w: int, h: int, a: Color, b: Color, theme: dict | None = None) -> pygame.Surface:
+    th = theme or {}
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
     t = yy / h
     base = np.zeros((h, w, 3), np.float32)
-    top, bottom = np.array([16, 18, 32], np.float32), np.array([5, 6, 12], np.float32)
+    top = np.array(th.get("bg_top", (16, 18, 32)), np.float32)
+    bottom = np.array(th.get("bg_bottom", (5, 6, 12)), np.float32)
     base[:] = top * (1 - t[..., None]) + bottom * t[..., None]
     for color, cx, cy in ((a, 0.0, 0.18), (b, 1.0, 0.82)):
         d = np.sqrt(((xx / w - cx) * 1.0) ** 2 + ((yy / h - cy) * 0.56) ** 2)
@@ -314,16 +316,25 @@ def make_background(w: int, h: int, a: Color, b: Color) -> pygame.Surface:
     return pygame.surfarray.make_surface(arr.swapaxes(0, 1))
 
 
-def make_floor(radius: int) -> pygame.Surface:
+def make_floor(radius: int, theme: dict | None = None) -> pygame.Surface:
+    th = theme or {}
     size = radius * 2
     yy, xx = np.mgrid[0:size, 0:size].astype(np.float32)
     d = np.sqrt((xx - radius) ** 2 + (yy - radius) ** 2) / radius
-    inner, outer = np.array([30, 34, 54], np.float32), np.array([13, 15, 26], np.float32)
+    inner = np.array(th.get("floor_inner", (30, 34, 54)), np.float32)
+    outer = np.array(th.get("floor_outer", (13, 15, 26)), np.float32)
     col = inner * (1 - d[..., None]) + outer * d[..., None]
-    # concentric rings + cross lines for texture
-    rings = ((d * 9) % 1 < 0.025).astype(np.float32) * 8
-    cross = ((np.abs(xx - radius) < 1.2) | (np.abs(yy - radius) < 1.2)).astype(np.float32) * 6
-    col += (rings + cross)[..., None]
+    # texture: concentric rings + cross (classic), hex-ish grid (neon), cracks (lava)
+    line = np.array(th.get("floor_line", (8, 8, 8)), np.float32)
+    pattern = th.get("pattern", "rings")
+    if pattern == "grid":
+        tex = (((xx % 48) < 2) | ((yy % 48) < 2)).astype(np.float32)
+    elif pattern == "cracks":
+        ang = np.arctan2(yy - radius, xx - radius)
+        tex = ((np.abs(np.sin(ang * 7 + d * 9)) < 0.05) | ((d * 6) % 1 < 0.02)).astype(np.float32)
+    else:
+        tex = (((d * 9) % 1 < 0.025) | (np.abs(xx - radius) < 1.2) | (np.abs(yy - radius) < 1.2)).astype(np.float32)
+    col += tex[..., None] * line
     surf = pygame.surfarray.make_surface(np.clip(col, 0, 255).astype(np.uint8).swapaxes(0, 1)).convert_alpha()
     pa = pygame.surfarray.pixels_alpha(surf)
     pa[...] = _circle_alpha(size, radius - 1).T

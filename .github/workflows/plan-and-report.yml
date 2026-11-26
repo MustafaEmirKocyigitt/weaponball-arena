@@ -1,0 +1,50 @@
+name: plan-and-report
+
+# 06:00 UTC (09:00 TR): write TODAY.md (today's posts) and REPORT.md (draft stats),
+# both visible on the repo's front page. Re-runs after every post so the plan stays current.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_run:
+    workflows: [daily-arena]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: plan-and-report
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      HAS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e .
+      - name: Today's plan
+        run: arena plan
+      - name: Draft report
+        if: env.HAS_TOKEN == 'true'
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: arena report
+        continue-on-error: true
+      - name: Commit
+        run: |
+          git config user.name "weaponball-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add TODAY.md REPORT.md data/insights.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "plan/report: $(date -u +'%F %H:%M')"
+          git pull --rebase --autostash
+          git push
