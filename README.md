@@ -56,6 +56,28 @@ Her paylaşımın taslağı ve Instagram media ID'si `data/history.json` dosyas�
 
 Kazanan netleşince (her taslakta ~5 paylaşım) `variants.rotation` listesine sadece kazananı bırakmak yeterli.
 
+## Dakik zamanlama: cron-job.org (ücretsiz)
+GitHub'ın kendi zamanlayıcısı saatlerce gecikebiliyor. Bu yüzden asıl tetikleyici olarak ücretsiz **cron-job.org** kullanılıyor; GitHub zamanlamaları yalnızca yedek. Aynı slot iki kez paylaşılmaz.
+
+1. **GitHub token** — github.com → Settings → Developer settings → Fine-grained tokens → *Generate new token*
+   - Repository access: *Only select repositories* → `weaponball-arena`
+   - Permissions → Repository → **Actions: Read and write** (başka izin verme)
+   - Süre: istediğin kadar (dolunca yenisini cron-job.org'a yapıştır)
+2. **cron-job.org** → ücretsiz hesap → *Create cronjob*, üç tane:
+
+| Başlık | Saat (Europe/Istanbul) | Body içindeki slot |
+|---|---|---|
+| weaponball early | her gün 14:00 | `early` |
+| weaponball main | her gün **18:35** (video 19:00'da çıkar) | `main` |
+| weaponball late | her gün 21:15 | `late` |
+
+   Her birinde:
+   - URL: `https://api.github.com/repos/MustafaEmirKocyigitt/weaponball-arena/actions/workflows/daily.yml/dispatches`
+   - *Advanced* → Request method: **POST**
+   - Headers: `Accept: application/vnd.github+json`, `Authorization: Bearer <TOKEN>`, `X-GitHub-Api-Version: 2022-11-28`
+   - Body: `{"ref":"main","inputs":{"slot":"main","scheduled":"true"}}` (slot kısmını satıra göre değiştir)
+   - Başarılı çağrı **204** döner.
+
 ## Zamanlama ve paylaşım sıklığı
 **daily-arena** workflow'u günde 3 kez çalışır (UTC):
 

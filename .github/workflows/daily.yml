@@ -7,6 +7,8 @@ name: daily-arena
 #                                on busy European nights (>= 4 games) a single multi-battle "night" Reel instead
 # At most 3 posts a day, never the same match twice (see config.yaml -> schedule).
 #
+# Primary trigger: cron-job.org calls this workflow on time (see README). The
+# GitHub schedules below are only a fallback.
 # GitHub sometimes starts scheduled runs late or skips them, so each slot has a
 # backup run 25-30 min later. A backup only posts if its slot hasn't posted yet
 # (checked against data/history.json), so nothing is ever posted twice.
@@ -29,6 +31,10 @@ on:
         type: choice
         options: [main, early, late, night]
         default: main
+      scheduled:
+        description: "Behave like a scheduled run (used by the external cron-job.org trigger)"
+        type: boolean
+        default: false
       date:
         description: "Local date YYYY-MM-DD (empty = today)"
         type: string
@@ -48,12 +54,13 @@ jobs:
     env:
       # Publishing is skipped (with a warning) until the Instagram secret exists.
       HAS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN != '' }}
-      WANT_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish }}
+      WANT_PUBLISH: ${{ github.event_name == 'schedule' || inputs.publish || inputs.scheduled }}
       SCHED: ${{ github.event.schedule }}
     steps:
       - name: Decide slot
         env:
           INPUT_SLOT: ${{ inputs.slot }}
+          INPUT_SCHEDULED: ${{ inputs.scheduled }}
         run: |
           case "$SCHED" in
             "0 11 * * *"|"30 11 * * *") SLOT=early ;;
@@ -63,6 +70,8 @@ jobs:
           esac
           echo "SLOT=$SLOT" >> "$GITHUB_ENV"
           # scheduled runs (incl. backups) never repeat a slot that already posted today
+          # external trigger (cron-job.org): punctual, so no delay check, but never repeat a post
+          if [ "$INPUT_SCHEDULED" = "true" ]; then echo "ARENA_SKIP_IF_POSTED=1" >> "$GITHUB_ENV"; fi
           if [ -n "$SCHED" ]; then
             echo "ARENA_SKIP_IF_POSTED=1" >> "$GITHUB_ENV"
             # GitHub can start scheduled runs hours late; a stale run must not post at a random time
@@ -118,7 +127,7 @@ jobs:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           # The anchor post waits for 16:00 UTC; bonus battles and manual runs go out right away.
-          NOW_FLAG: ${{ (github.event_name == 'workflow_dispatch' || env.SLOT != 'main') && '--now' || '' }}
+          NOW_FLAG: ${{ ((github.event_name == 'workflow_dispatch' && !inputs.scheduled) || env.SLOT != 'main') && '--now' || '' }}
         run: arena publish --dir "${{ steps.render.outputs.dir }}" $NOW_FLAG
 
       # Keep the prediction record (data/history.json) so tomorrow's caption can
