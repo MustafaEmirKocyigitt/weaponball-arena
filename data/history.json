@@ -84,8 +84,9 @@
    "predicted": "Beşiktaş",
    "predicted_side": 0,
    "legends": false,
-   "outcome": null,
-   "variant": "neon"
+   "outcome": "hit",
+   "variant": "neon",
+   "score": "2-1"
   },
   {
    "date": "2026-11-26",
@@ -99,8 +100,9 @@
    "predicted": "Trabzonspor",
    "predicted_side": 1,
    "legends": false,
-   "outcome": null,
-   "variant": "night"
+   "outcome": "hit",
+   "variant": "night",
+   "score": "1-2"
   },
   {
    "date": "2026-11-26",
@@ -114,8 +116,9 @@
    "predicted": "Juventus",
    "predicted_side": 0,
    "legends": false,
-   "outcome": null,
-   "variant": "night"
+   "outcome": "hit",
+   "variant": "night",
+   "score": "4-1"
   },
   {
    "date": "2026-11-26",
@@ -129,8 +132,24 @@
    "predicted": "Ferencvaros",
    "predicted_side": 0,
    "legends": false,
+   "outcome": "draw",
+   "variant": "night",
+   "score": "0-0"
+  },
+  {
+   "date": "2026-11-27",
+   "slot": "main",
+   "league_code": "eng.1",
+   "event_id": "401879225",
+   "home": "Nottingham Forest",
+   "away": "Chelsea",
+   "home_short": "NFO",
+   "away_short": "CHE",
+   "predicted": "Chelsea",
+   "predicted_side": 1,
+   "legends": false,
    "outcome": null,
-   "variant": "night"
+   "variant": "lava"
   }
  ]
 }
