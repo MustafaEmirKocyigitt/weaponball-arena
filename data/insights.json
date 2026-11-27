@@ -1,30 +1,30 @@
 {
  "18347082385273530": {
-  "fetched_at": "2026-11-27T16:12:13.861364+00:00",
+  "fetched_at": "2026-11-27T18:16:17.315925+00:00",
   "metrics": {
-   "views": 274,
+   "views": 275,
    "reach": 230,
    "likes": 1,
    "comments": 0,
    "shares": 0,
    "saved": 0,
    "total_interactions": 1,
-   "ig_reels_avg_watch_time": 8032,
-   "ig_reels_video_view_total_time": 1927690
+   "ig_reels_avg_watch_time": 8003,
+   "ig_reels_video_view_total_time": 1928961
   }
  },
  "18345507889274108": {
-  "fetched_at": "2026-11-27T16:12:13.861364+00:00",
+  "fetched_at": "2026-11-27T18:16:17.315925+00:00",
   "metrics": {
-   "views": 234,
+   "views": 236,
    "reach": 198,
    "likes": 1,
    "comments": 0,
    "shares": 0,
    "saved": 0,
    "total_interactions": 1,
-   "ig_reels_avg_watch_time": 7690,
-   "ig_reels_video_view_total_time": 1599542
+   "ig_reels_avg_watch_time": 7625,
+   "ig_reels_video_view_total_time": 1601264
   }
  }
 }
