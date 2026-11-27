@@ -1,5 +1,5 @@
 # 📅 Today's plan: Saturday 28 November 2026
-_Generated 2026-11-27 23:42 UTC · times are Turkey time (UTC+3) · bonus slots only post for big matches_
+_Generated 2026-11-27 23:52 UTC · times are Turkey time (UTC+3) · bonus slots only post for big matches_
 
 | Slot | Goes live (TR) | Match | Competition | Kick-off (TR) | Draft | Arena prediction |
 |---|---|---|---|---|---|---|
