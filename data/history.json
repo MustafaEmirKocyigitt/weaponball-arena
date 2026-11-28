@@ -148,8 +148,24 @@
    "predicted": "Chelsea",
    "predicted_side": 1,
    "legends": false,
+   "outcome": "miss",
+   "variant": "lava",
+   "score": "3-2"
+  },
+  {
+   "date": "2026-11-28",
+   "slot": "main",
+   "league_code": "esp.1",
+   "event_id": "401882789",
+   "home": "Real Madrid",
+   "away": "Alavés",
+   "home_short": "RMA",
+   "away_short": "ALA",
+   "predicted": "Real Madrid",
+   "predicted_side": 0,
+   "legends": false,
    "outcome": null,
-   "variant": "lava"
+   "variant": "classic"
   }
  ]
 }
