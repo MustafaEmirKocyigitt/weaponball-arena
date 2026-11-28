@@ -1,6 +1,6 @@
 {
  "18347082385273530": {
-  "fetched_at": "2026-11-28T11:01:49.838753+00:00",
+  "fetched_at": "2026-11-28T15:05:46.589649+00:00",
   "metrics": {
    "views": 286,
    "reach": 235,
@@ -14,7 +14,7 @@
   }
  },
  "18345507889274108": {
-  "fetched_at": "2026-11-28T11:01:49.838753+00:00",
+  "fetched_at": "2026-11-28T15:05:46.589649+00:00",
   "metrics": {
    "views": 245,
    "reach": 203,
@@ -23,8 +23,8 @@
    "shares": 0,
    "saved": 1,
    "total_interactions": 3,
-   "ig_reels_avg_watch_time": 7656,
-   "ig_reels_video_view_total_time": 1669117
+   "ig_reels_avg_watch_time": 7623,
+   "ig_reels_video_view_total_time": 1669654
   }
  }
 }
